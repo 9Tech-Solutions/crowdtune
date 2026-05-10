@@ -1,0 +1,10 @@
+bin/
+tmp/
+*.exe
+*.test
+*.out
+.air.tmp
+.env
+coverage.out
+internal/oapi/*.gen.go
+internal/db/sqlc/*.sql.go

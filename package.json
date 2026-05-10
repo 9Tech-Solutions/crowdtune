@@ -1,0 +1,20 @@
+{
+  "name": "crowdtune",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Social jukebox monorepo (Go + React + Postgres)",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "dev:web": "pnpm --filter web dev",
+    "build:web": "pnpm --filter web build",
+    "lint:web": "pnpm --filter web lint",
+    "typecheck:web": "pnpm --filter web typecheck",
+    "test:web": "pnpm --filter web test",
+    "openapi:gen": "pnpm --filter web openapi:gen"
+  },
+  "packageManager": "pnpm@10.33.0"
+}

@@ -1,0 +1,11 @@
+# oapi-codegen configuration for the CrowdTune API server stubs.
+# Run with: oapi-codegen --config oapi-config.yaml openapi.yaml
+package: oapi
+generate:
+  models: true
+  gin-server: true
+  strict-server: true
+  embedded-spec: true
+output: internal/oapi/server.gen.go
+output-options:
+  skip-prune: true

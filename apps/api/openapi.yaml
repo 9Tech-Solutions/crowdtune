@@ -1,0 +1,58 @@
+openapi: 3.1.0
+info:
+  title: CrowdTune API
+  version: 0.0.0
+  description: Phase 0 skeleton. Only the health endpoint is defined.
+  license:
+    name: Sustainable Use License v1.0
+    url: ../../LICENSE.md
+servers:
+  - url: http://localhost:8080
+    description: Local dev
+tags:
+  - name: meta
+    description: Server meta and health
+paths:
+  /healthz:
+    get:
+      operationId: getHealth
+      tags: [meta]
+      summary: Liveness and DB connectivity check
+      responses:
+        '200':
+          description: Server is alive and dependencies are reachable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Server is up but a critical dependency is down
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status, db]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        db:
+          type: string
+          enum: [ok, down]
+        version:
+          type: string
+          description: API version (semver)
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Machine-readable error code
+        message:
+          type: string
+          description: Human-readable error message
