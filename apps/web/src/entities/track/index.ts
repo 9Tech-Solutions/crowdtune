@@ -1,1 +1,5 @@
 export type { Track, TrackReference, Metadata } from './model/types'
+export { trackIdentityKey, tracksAreEqual } from './lib/identity'
+export { sortedQueue, currentTrack, currentTrackKey } from './lib/queue'
+export { formatArtists, voteStatusLabel } from './lib/labels'
+export { fanartLoadCandidates, metadataLoadCandidates } from './lib/load-candidates'
