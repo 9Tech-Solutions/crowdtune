@@ -20,9 +20,10 @@ clean-room workflow described in `docs/translation-workflow.md`.
 ## Cloud Functions (`.reference/festify/functions/`)
 
 - `[i]` `functions/lib/spotify-auth.ts` - Spotify OAuth handshake + refresh token storage. Phase 9 backend wedge. Spec at `docs/specs/spotify-auth.spec.md` passed firewall review. Locked: per-user credentials row, server-side encrypted refresh tokens, AES-GCM with fresh nonce per write, key from `SPOTIFY_TOKEN_ENC_KEY` env var. Slice plan:
-  - **9a (DONE this slice)**: `infra/migrations/20260510191527_add_spotify_credentials.sql` creates the `spotify_credentials` table with 9 columns, UNIQUE on `user_id`, FK to `neon_auth."user"(id) ON DELETE CASCADE`. Down is `DROP TABLE`. Migration not yet applied to the live database (user runs `goose up` when ready).
-  - **9b (next)**: `apps/api/internal/crypto/` AES-GCM helpers + `apps/api/internal/spotify/` exchange + refresh internals + Handler A (`POST /api/spotify/token`) + OpenAPI entries + env-var additions.
-  - **9c**: `/security-review` of the whole, then merge.
+  - **9a (DONE)**: `infra/migrations/20260510191527_add_spotify_credentials.sql` creates the `spotify_credentials` table with 9 columns, UNIQUE on `user_id`, FK to `neon_auth."user"(id) ON DELETE CASCADE`. Migration not yet applied to the live database.
+  - **9b.1 (DONE)**: `apps/api/internal/tokencrypto/` AES-256-GCM package with `Encrypt`, `Decrypt`, `KeyFromHex`. 22 tests passing with race detector. Security-reviewer cleared all 8 threat-model categories (AEAD config, nonce handling, error opacity, buffer safety, key validation, CSPRNG, test coverage, scope).
+  - **9b.2 (next)**: `apps/api/internal/spotify/` package (HTTP client + ExchangeCode + RefreshAccessToken + GetValidAccessToken with on-demand refresh) + Handler A (`POST /api/spotify/token`) + sqlc query for the credentials table + OpenAPI entries + `SPOTIFY_CLIENT_ID/SECRET/TOKEN_ENC_KEY/REDIRECT_URI` env vars wired through `config.go`.
+  - **9c**: `/security-review` of the handler + a final integration test against a stubbed Spotify token endpoint before merge.
   - Handler C (catalog client-credential token) deferred until search is needed. Handler D (account linking) likely fully replaced by Better Auth's native OAuth provider linking - evaluate before writing any code.
 
 ## Notes
