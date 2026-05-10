@@ -13,6 +13,11 @@ type Config struct {
 	Port        string `env:"API_PORT" envDefault:"8080"`
 	Env         string `env:"API_ENV" envDefault:"local"`
 	LogLevel    string `env:"LOG_LEVEL" envDefault:"info"`
+
+	// Neon Auth (Phase 8). Optional until provisioning is complete.
+	JWKSURL  string `env:"NEON_AUTH_JWKS_URL"`
+	Issuer   string `env:"NEON_AUTH_ISSUER"`
+	Audience string `env:"NEON_AUTH_AUDIENCE" envDefault:"crowdtune"`
 }
 
 func Load() (*Config, error) {

@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/9Tech-Solutions/crowdtune/apps/api/internal/auth"
 	"github.com/9Tech-Solutions/crowdtune/apps/api/internal/config"
 	"github.com/9Tech-Solutions/crowdtune/apps/api/internal/handlers"
 	"github.com/gin-gonic/gin"
@@ -45,7 +46,23 @@ func main() {
 	router.Use(gin.Recovery())
 	router.Use(requestLogger(logger))
 
+	// Public endpoints.
 	handlers.RegisterMeta(router, pool)
+
+	// Protected endpoints. JWKS is optional during Phase 8a; if unset, the
+	// /api group is skipped and any client call to /api/* gets a clean 404.
+	jwks, err := auth.NewJWKS(cfg.JWKSURL)
+	switch {
+	case errors.Is(err, auth.ErrJWKSNotConfigured):
+		logger.Warn("Neon Auth JWKS_URL not set; protected /api/* endpoints disabled until Phase 8a")
+	case err != nil:
+		logger.Error("JWKS init failed", "err", err)
+		os.Exit(1)
+	default:
+		api := router.Group("/api")
+		handlers.RegisterMe(api, jwks, cfg.Issuer, cfg.Audience)
+		logger.Info("auth middleware live", "issuer", cfg.Issuer, "audience", cfg.Audience)
+	}
 
 	srv := &http.Server{
 		Addr:              fmt.Sprintf("%s:%s", cfg.Host, cfg.Port),

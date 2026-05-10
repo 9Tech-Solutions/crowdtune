@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: CrowdTune API
   version: 0.0.0
-  description: Phase 0 skeleton. Only the health endpoint is defined.
+  description: Phase 8 skeleton. /healthz public, /api/* requires Neon Auth bearer JWT.
   license:
     name: Sustainable Use License v1.0
     url: ../../LICENSE.md
@@ -12,12 +12,15 @@ servers:
 tags:
   - name: meta
     description: Server meta and health
+  - name: identity
+    description: Authenticated user info
 paths:
   /healthz:
     get:
       operationId: getHealth
       tags: [meta]
       summary: Liveness and DB connectivity check
+      security: []
       responses:
         '200':
           description: Server is alive and dependencies are reachable
@@ -31,7 +34,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/me:
+    get:
+      operationId: getMe
+      tags: [identity]
+      summary: Return the authenticated user's identity claims
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User identity extracted from the bearer JWT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '401':
+          description: Bearer token missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Neon Auth (Better-Auth) JWT. Validated via JWKS at NEON_AUTH_JWKS_URL.
   schemas:
     HealthResponse:
       type: object
@@ -46,6 +75,18 @@ components:
         version:
           type: string
           description: API version (semver)
+    MeResponse:
+      type: object
+      required: [user_id]
+      properties:
+        user_id:
+          type: string
+          description: Subject claim from the JWT (Neon Auth user ID)
+        email:
+          type: string
+          format: email
+        role:
+          type: string
     ErrorResponse:
       type: object
       required: [code, message]
