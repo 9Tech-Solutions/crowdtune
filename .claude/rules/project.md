@@ -30,6 +30,8 @@ Do not propose alternate frameworks (Next.js, Echo, Fiber, Drizzle, sqlx, Redux,
 - **Component API**: `Card.Content` (or `CardContent`), not `CardBody`. Button `variant` covers visual style (primary | danger | danger-soft | ghost | outline | secondary | tertiary); no separate `color` prop, no `solid` variant.
 - **Anchor-as-button**: `<a className={buttonVariants({ variant, size })}>` for navigation CTAs. Button does not accept `href`/`as`.
 - **Component lookups**: prefer the project-scoped `heroui-react` skill at `.claude/skills/heroui-react/` and the `heroui-react` MCP server (registered in `.mcp.json`) over guessing from training data.
+- **HeroUI-first for ports.** Every Festify component translation MUST be implemented with HeroUI v3 primitives wherever HeroUI offers one (Button, Card, Input, Modal, Drawer, Dropdown, Tabs, Table, Toast, Tooltip, Accordion, Avatar, Badge, Chip, Progress, Spinner, etc.). Do NOT hand-roll a div-and-Tailwind equivalent of something HeroUI ships. The implementer agent must call `list_components` / `get_component_docs` on the `heroui-react` MCP before deciding to compose a primitive from raw Tailwind.
+- **HeroUI defaults first.** Spacing, radius, color, and size come from the component's own props (`size`, `variant`, `color`, `radius`) and HeroUI's intrinsic theme tokens. Do not override default padding/margin/gap with Tailwind utilities unless the spec calls out a specific layout requirement that the component API cannot express. Reach for Tailwind only for outer page-shell layout (`min-h-screen`, `flex`, `grid`, `gap-*`, `px-*` on the page container). Reference patterns: `apps/web/src/pages/home/ui/HomePage.tsx`, `apps/web/src/pages/auth/ui/AuthPage.tsx`.
 
 ## Use scaffolding commands
 
@@ -58,8 +60,8 @@ and the review hooks expect it as the primary index.
 
 ## Auth conventions (Phase 8 onwards)
 
-- **JWT is the canonical session.** No cookies on the API. Frontend uses `apps/web/src/lib/auth-client.ts` (Neon Auth / Better Auth); backend validates via `internal/auth.RequireUser`.
-- **Never call `fetch` from a React component.** Always go through `apps/web/src/api/client.ts`'s `api()` wrapper so the bearer is attached and `ApiError` lands consistently.
+- **JWT is the canonical session.** No cookies on the API. Frontend uses `apps/web/src/shared/auth/auth-client.ts` (Neon Auth / Better Auth, exported via `@/shared/auth`); backend validates via `internal/auth.RequireUser`.
+- **Never call `fetch` from a React component.** Always go through `apps/web/src/shared/api/client.ts`'s `api()` wrapper (exported via `@/shared/api`) so the bearer is attached and `ApiError` lands consistently.
 - **`sub` is the user ID, everywhere.** Persist `user_id TEXT` columns referencing the JWT `sub` claim. Never duplicate Neon's user table; JOIN against `neon_auth."user"` (the Better-Auth-provisioned user table; `user` is a reserved word and must be quoted).
 - **No JWT validation outside `internal/auth`.** Handlers call `auth.UserID(c)` / `auth.Email(c)` / `auth.Role(c)` to read claims from `gin.Context`. Direct token parsing in handlers is forbidden.
 - **Add new protected routes to the `/api` group.** `cmd/api/main.go` mounts the auth middleware once at the group level; never re-attach `RequireUser` per-route.

@@ -70,13 +70,21 @@ the source if confused" - that defeats the firewall.
 
 ### Step 4 - Implement from the spec
 
-Frontend:
+Frontend (place files per FSD layers - `pages | widgets | features | entities | shared`, never the
+pre-FSD `apps/web/src/components/`):
 
 ```
 Agent(subagent_type: react-component-author,
-      prompt: "Implement docs/specs/queue-list.spec.md as a React component at
-               apps/web/src/components/QueueList.tsx. Pair with a Vitest test file.")
+      prompt: "Implement docs/specs/queue-list.spec.md as a Widget at
+               apps/web/src/widgets/queue-list/ui/QueueList.tsx with a barrel index.ts.
+               Pair with a Vitest test file. Use HeroUI v3 primitives (call list_components /
+               get_component_docs on the heroui-react MCP first); fall back to Tailwind only when
+               HeroUI has no equivalent.")
 ```
+
+The implementer agent has the `heroui-react` MCP tools in its allow-list and is required by its system
+prompt (rules 4 + 5) to query HeroUI BEFORE writing JSX. Visual ports without a HeroUI lookup in the
+agent's reply should be rejected and re-run.
 
 Backend (when the spec describes server-side behavior):
 
