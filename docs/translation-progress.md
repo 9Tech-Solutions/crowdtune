@@ -13,7 +13,7 @@ clean-room workflow described in `docs/translation-workflow.md`.
 
 ## Frontend components (`.reference/festify/src/`)
 
-(none yet - Phase 5 will scaffold the empty React app first)
+- `[i]` `state.ts` - root domain types. Spec at `docs/specs/state.spec.md` passed firewall review. Implemented so far: `Party`, `PartySettings`, `Playback` (entities/party); `Track`, `TrackReference`, `Metadata` (entities/track); `Playlist`, `PlaylistReference` (entities/playlist); `Image` (shared/model, lifted out of party to avoid same-layer cross-slice import). Deferred: `ConnectionState`, view-layer state shapes, `User` slice (waits on Neon Auth shape), `Player` slice (waits on Phase 9 Spotify SDK), Zustand stores. Lock-now decisions applied: ISO 8601 timestamp strings on the wire, `spotifyUserId` rename, `provider: 'spotify'` literal union, camelCase fields throughout. Typecheck green.
 
 ## Cloud Functions (`.reference/festify/functions/`)
 
