@@ -4,6 +4,9 @@
 # --- Claude Code user-local overlay ---
 .claude/settings.local.json
 
+# --- Transient scan / diff reports ---
+.reports/
+
 # --- Secrets ---
 .env
 .env.*
