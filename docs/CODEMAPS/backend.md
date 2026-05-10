@@ -1,14 +1,15 @@
-<!-- Generated: 2026-05-10 | Files scanned: 4 | Token estimate: ~500 -->
+<!-- Generated: 2026-05-10 | Files scanned: 6 | Token estimate: ~600 -->
 
 # Backend (apps/api)
 
 ## Routes (current)
 
-| Method | Path | Handler | Description |
-|---|---|---|---|
-| GET | /healthz | handlers.metaHandler.health | Liveness + DB ping |
+| Method | Path | Auth | Handler | Description |
+|---|---|---|---|---|
+| GET | /healthz | public | handlers.metaHandler.health | Liveness + DB ping |
+| GET | /api/me | bearer JWT | handlers.me | Echo JWT-extracted user_id, email, role |
 
-The OpenAPI contract lives at `apps/api/openapi.yaml`. Run `make openapi` to regenerate `internal/oapi/server.gen.go`.
+The OpenAPI contract lives at `apps/api/openapi.yaml`. Run `make openapi` to regenerate `internal/oapi/server.gen.go`. `bearerAuth` is declared as a `securitySchemes` entry; `/healthz` opts out with `security: []`.
 
 ## Layered structure
 
@@ -16,8 +17,9 @@ The OpenAPI contract lives at `apps/api/openapi.yaml`. Run `make openapi` to reg
 cmd/api/main.go         wire-up: config -> pgxpool -> gin -> handlers -> http.Server with graceful shutdown
   │
   ▼
-internal/config         caarlos0/env-driven Config struct (DATABASE_URL, host, port, env, log level)
-internal/handlers       one file per resource; today only meta.go
+internal/config         caarlos0/env-driven Config struct (DB URL, host, port, JWKS URL, issuer, audience)
+internal/auth           JWKS resolver (keyfunc) + RequireUser gin middleware; UserID/Email/Role helpers
+internal/handlers       one file per resource: meta.go (public), me.go (protected)
 internal/db/queries     .sql files for sqlc (empty in Phase 0)
 internal/db/sqlc        sqlc-generated, gitignored
 internal/oapi           oapi-codegen output, gitignored
@@ -30,18 +32,28 @@ internal/domain         pure types (no I/O), reserved for future
 gin.New()
   └── gin.Recovery()                       panic catch
   └── requestLogger(slog)                  method, path, status, duration_ms
-  └── route handlers
+  ├── public routes:
+  │     GET /healthz                       (no auth)
+  └── /api group (only mounted if NEON_AUTH_JWKS_URL is set):
+        └── auth.RequireUser(jwks, iss, aud)   parses Bearer, validates via JWKS
+              GET /api/me                  reads Sub/Email/Role from gin.Context
 ```
+
+If `NEON_AUTH_JWKS_URL` is empty (Phase 8a not yet done) the `/api` group is **not registered** at boot time;
+client calls to `/api/*` then return clean 404 instead of confusing 401s. Boot logs
+`Neon Auth JWKS_URL not set; protected /api/* endpoints disabled until Phase 8a`.
 
 ## Key dependencies
 
 - **gin-gonic/gin**: HTTP router and middleware
 - **jackc/pgx/v5 + pgxpool**: Postgres driver, async-friendly connection pool
+- **golang-jwt/jwt/v5**: JWT parsing + signature/claim validation
+- **MicahParks/keyfunc/v3**: cached, auto-refreshing remote JWKS resolver for verifying Neon Auth tokens
 - **caarlos0/env/v11**: env -> struct binding with required/default tags
 - **joho/godotenv**: load .env in dev (no-op in prod)
 - **stretchr/testify**: assertions and table-driven tests
 - **pressly/goose/v3**: migration tool (binary on PATH)
-- **oapi-codegen v2.7**: generates Gin server stubs from openapi.yaml
+- **oapi-codegen v2.7 + runtime**: generates Gin server stubs from openapi.yaml
 - **sqlc**: generates typed Go from .sql files (binary install deferred on Windows)
 
 ## Health endpoint behavior

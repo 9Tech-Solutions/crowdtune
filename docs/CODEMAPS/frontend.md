@@ -1,15 +1,27 @@
-<!-- Generated: 2026-05-10 | Files scanned: 5 | Token estimate: ~450 -->
+<!-- Generated: 2026-05-10 | Files scanned: 11 | Token estimate: ~600 -->
 
 # Frontend (apps/web)
 
 ## Page tree (current)
 
-Phase 0 skeleton: a single root component renders a heading. No routes wired yet. TanStack Router is installed but not configured; will be added when the first real route lands.
+TanStack Router file-based routing. The plugin generates `src/routeTree.gen.ts` (gitignored) from
+`src/routes/`. `pnpm routes:gen` triggers it manually; `pnpm build` chains it.
 
 ```
-src/main.tsx           ReactDOM.createRoot, StrictMode wrapper
-  └── src/App.tsx      placeholder heading + paragraph in Tailwind classes
+src/main.tsx                 RouterProvider, module augmentation for typed router
+src/routes/__root.tsx        wraps Outlet in NeonAuthProvider
+  ├── /                      src/routes/index.tsx -> renders <App />
+  ├── /sign-in               src/routes/sign-in.tsx -> <AuthView /> in a Tailwind card
+  └── /sign-up               src/routes/sign-up.tsx -> <AuthView /> in a Tailwind card
 ```
+
+## Auth (Phase 8)
+
+- `src/lib/auth-client.ts`: `createAuthClient(VITE_NEON_AUTH_URL)` from `@neondatabase/neon-js/auth`. Logs a warning at module load if the env is empty.
+- `src/providers/NeonAuthProvider.tsx`: wraps children in `NeonAuthUIProvider` with email-OTP + Google + Spotify social providers.
+- `src/api/client.ts`: typed `api<T>()` wrapper around `fetch`. Pulls `data.session.token` from `authClient.getSession()` and attaches `Authorization: Bearer <jwt>` to every API call. Throws a typed `ApiError` on 4xx/5xx.
+
+Rule: **no raw `fetch` calls in components** - always go through `api()` so the bearer is attached and `ApiError` lands consistently.
 
 ## State management
 
@@ -18,10 +30,10 @@ Three layers, each with a clear lane:
 | Concern | Tool | Pattern |
 |---|---|---|
 | Client UI state | Zustand 5 | one store slice per concern in `src/stores/` |
-| Server state | TanStack Query 5 | one hook per resource in `src/queries/` |
-| URL state | TanStack Router | file-based routes in `src/routes/` (when added) |
+| Server state | TanStack Query 5 + `api()` wrapper | one hook per resource in `src/queries/` |
+| URL state | TanStack Router | file-based routes in `src/routes/` |
 
-No Redux. No useContext for global state. No `fetch` calls outside TanStack Query hooks.
+No Redux. No useContext for global state. No `fetch` calls outside TanStack Query hooks. Auth session is read directly from `authClient.getSession()` inside the api wrapper, not stored in Zustand.
 
 ## Build pipeline
 

@@ -39,6 +39,16 @@ Every code search starts with the code-review-graph MCP tools (`semantic_search_
 `get_review_context`, `get_impact_radius`) before falling back to Grep / Glob / Read. The graph is faster
 and the review hooks expect it as the primary index.
 
+## Auth conventions (Phase 8 onwards)
+
+- **JWT is the canonical session.** No cookies on the API. Frontend uses `apps/web/src/lib/auth-client.ts` (Neon Auth / Better Auth); backend validates via `internal/auth.RequireUser`.
+- **Never call `fetch` from a React component.** Always go through `apps/web/src/api/client.ts`'s `api()` wrapper so the bearer is attached and `ApiError` lands consistently.
+- **`sub` is the user ID, everywhere.** Persist `user_id TEXT` columns referencing the JWT `sub` claim. Never duplicate Neon's user table; JOIN against `neon_auth.users_sync` instead.
+- **No JWT validation outside `internal/auth`.** Handlers call `auth.UserID(c)` / `auth.Email(c)` / `auth.Role(c)` to read claims from `gin.Context`. Direct token parsing in handlers is forbidden.
+- **Add new protected routes to the `/api` group.** `cmd/api/main.go` mounts the auth middleware once at the group level; never re-attach `RequireUser` per-route.
+- **Update `openapi.yaml` with `security: [bearerAuth: []]` for any new authed endpoint.** Public endpoints set `security: []` explicitly to opt out.
+- **Sensitive endpoints get `/security-review` before merge.** Anything touching auth, payments, secrets, file paths, or external APIs must run the ECC `security-reviewer` agent or `/security-review` first.
+
 ## Reviewer routing
 
 - `*.tsx`, `*.ts` -> ECC `typescript-reviewer` agent or `/code-review`

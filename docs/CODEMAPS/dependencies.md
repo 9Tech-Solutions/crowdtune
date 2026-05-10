@@ -7,7 +7,7 @@
 | Service | Purpose | Status |
 |---|---|---|
 | [Neon](https://neon.tech) Postgres | primary data store | URL placeholder in `.env.example`, not yet provisioned |
-| [Neon Auth](https://neon.com/docs/auth/overview) (Better-Auth-backed) | identity, JWT issuance, JWKS verification, `neon_auth.users_sync` schema | Phase 8 (planned in `docs/ROADMAP.md`); env-var placeholders in `.env.example` |
+| [Neon Auth](https://neon.com/docs/auth/overview) (Better-Auth-backed) | identity, JWT issuance, JWKS verification, `neon_auth.users_sync` schema | Phase 8 (8b-8f code-complete; 8a manual provisioning still pending — see `docs/setup/neon-auth.md`) |
 | (future) Spotify Web API + Web Playback SDK | host-side playback engine | Phase 9; clean-room port from Festify reference |
 | (future) PromptPay / Stripe TH | pay-per-track | Phase 11 |
 | (future) Sentry / equivalent | error tracking | not yet wired; Festify uses raven-js (deprecated) |
@@ -21,6 +21,8 @@
 | @tanstack/react-router | 1.169.x | routing |
 | @tanstack/react-query | 5.100.x | server state |
 | @tailwindcss/vite + tailwindcss | 4.3.x | styling |
+| @neondatabase/neon-js | 0.6.0-beta | Neon Auth client (Better-Auth-based) |
+| @neondatabase/auth-ui | 0.2.0-beta | prebuilt sign-in/up React components |
 
 ## Frontend dev libs
 
@@ -38,6 +40,9 @@
 |---|---|
 | github.com/gin-gonic/gin | HTTP router |
 | github.com/jackc/pgx/v5 + pgxpool | Postgres driver |
+| github.com/golang-jwt/jwt/v5 | JWT parser + claim validators |
+| github.com/MicahParks/keyfunc/v3 | cached, auto-refreshing remote JWKS resolver |
+| github.com/oapi-codegen/runtime | runtime support for oapi-codegen output |
 | github.com/caarlos0/env/v11 | env parsing |
 | github.com/joho/godotenv | local dev env loader |
 | github.com/pressly/goose/v3 | migration runtime |

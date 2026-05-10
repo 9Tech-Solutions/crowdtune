@@ -14,10 +14,22 @@ Living document. Updated each phase. Source of truth for what is shipped, what i
 | 5 | Stack scaffolding | Vite/React 19, Go 1.25/Gin, pgx/sqlc/goose, OpenAPI 3.1, GitHub Actions |
 | 6 | CRG build + codemaps | 9 files / 18 nodes / 100 edges indexed; 5 codemaps under `docs/CODEMAPS/` |
 | 7 | Verification matrix | typecheck / lint / test / build all green; 4 commits pushed to main |
+| - | DB smoke test | Neon Postgres reachable; init migration applied (pgcrypto, citext); `/healthz` returns `db: ok` |
 
 ---
 
-## Phase 8 - Neon Auth integration (NEXT)
+## Phase 8 - Neon Auth integration (IN PROGRESS)
+
+**Status (2026-05-10):**
+- 8a: pending (user task — provision Neon Auth in console; see `docs/setup/neon-auth.md`)
+- 8b: done — `@neondatabase/neon-js` + `@neondatabase/auth-ui` installed; NeonAuthProvider wraps the router root; `/sign-in` and `/sign-up` routes render `<AuthView />`
+- 8c: done — `apps/web/src/api/client.ts` attaches `Authorization: Bearer <jwt>`; typed `ApiError`
+- 8d: done — `internal/auth/{jwks,middleware,middleware_test}.go`; 11 tests pass covering happy path + 8 failure modes
+- 8e: done — `/api/me` mounted under bearer-auth `/api` group; OpenAPI updated with `bearerAuth` security scheme; oapi-codegen regenerated
+- 8f: done — migration `20260510145536_grant_neon_auth_users_sync.sql` written but pending (will fail loudly if Phase 8a is incomplete, by design)
+- 8g: in progress — codemap + project rules updated; CI auth-smoke job deferred (unit tests cover middleware exhaustively, no marginal value in a duplicate integration job until real JWKS exists)
+
+
 
 **Goal**: every protected route on the API verifies a Neon Auth (Better-Auth-backed) JWT, the React app has working sign-in / sign-up screens, and our app tables can JOIN against `neon_auth.users_sync`.
 
