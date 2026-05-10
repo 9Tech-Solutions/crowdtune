@@ -1,76 +1,106 @@
-<!-- Generated: 2026-05-10 | Files scanned: 11 | Token estimate: ~600 -->
+<!-- Generated: 2026-05-11 | Files scanned: 16 | Token estimate: ~700 -->
 
 # Frontend (apps/web)
 
-## Page tree (current)
+## Architecture: Feature-Sliced Design (FSD)
 
-TanStack Router file-based routing. The plugin generates `src/routeTree.gen.ts` (gitignored) from
-`src/routes/`. `pnpm routes:gen` triggers it manually; `pnpm build` chains it.
+`apps/web/src/` is organized into FSD layers. Imports flow **down** only:
+`app -> pages -> widgets -> features -> entities -> shared`. A layer never imports from a higher layer.
 
 ```
-src/main.tsx                 RouterProvider, module augmentation for typed router
-src/routes/__root.tsx        wraps Outlet in NeonAuthProvider
-  ├── /                      src/routes/index.tsx -> renders <App />
-  ├── /sign-in               src/routes/sign-in.tsx -> <AuthView /> in a Tailwind card
-  └── /sign-up               src/routes/sign-up.tsx -> <AuthView /> in a Tailwind card
+src/
+├── app/                Composition root, providers, global styles
+│   ├── providers/
+│   │   └── NeonAuthProvider.tsx
+│   └── styles/
+│       └── index.css   single-line @import "@heroui/styles"
+├── pages/              Route-level page components
+│   ├── home/
+│   │   ├── ui/HomePage.tsx + HomePage.test.tsx
+│   │   └── index.ts
+│   └── auth/
+│       ├── ui/AuthPage.tsx
+│       └── index.ts
+├── widgets/            Reusable composite UI blocks (empty Phase 0)
+├── features/           Discrete user-facing features (empty Phase 0)
+├── entities/           Domain model components (empty Phase 0)
+├── shared/             Cross-cutting utilities, no business logic
+│   ├── api/            api() wrapper + ApiError class (bearer attach)
+│   ├── auth/           authClient (Neon Auth singleton)
+│   └── test/           Vitest setup
+├── routes/             TanStack Router file-based routes (FSD exception)
+│   ├── __root.tsx      thin: imports NeonAuthProvider from @/app/providers
+│   ├── index.tsx       thin: imports HomePage from @/pages/home
+│   └── auth/$.tsx      thin: imports AuthPage from @/pages/auth, passes _splat as pathname
+├── main.tsx            entry: createRoot, RouterProvider, CSS imports
+└── routeTree.gen.ts    auto-generated (gitignored)
 ```
 
-## Auth (Phase 8)
+## Path aliases
 
-- `src/lib/auth-client.ts`: `createAuthClient(VITE_NEON_AUTH_URL)` from `@neondatabase/neon-js/auth`. Logs a warning at module load if the env is empty.
-- `src/providers/NeonAuthProvider.tsx`: wraps children in `NeonAuthUIProvider` with email-OTP + Google + Spotify social providers.
-- `src/api/client.ts`: typed `api<T>()` wrapper around `fetch`. Pulls `data.session.token` from `authClient.getSession()` and attaches `Authorization: Bearer <jwt>` to every API call. Throws a typed `ApiError` on 4xx/5xx.
+`tsconfig.app.json` and `vite.config.ts` agree on these aliases:
 
-Rule: **no raw `fetch` calls in components** - always go through `api()` so the bearer is attached and `ApiError` lands consistently.
+| Alias | Resolves to |
+|---|---|
+| `@/app/*` | `src/app/*` |
+| `@/pages/*` | `src/pages/*` |
+| `@/widgets/*` | `src/widgets/*` |
+| `@/features/*` | `src/features/*` |
+| `@/entities/*` | `src/entities/*` |
+| `@/shared/*` | `src/shared/*` |
 
-## State management
+`tsconfig.app.json` uses relative path values (`["./src/app/*"]`) because `baseUrl` is omitted (TS 6+ deprecates `baseUrl`). `vite.config.ts` uses `fileURLToPath(new URL(...))` so the same resolution works at bundle time.
 
-Three layers, each with a clear lane:
+## UI library: HeroUI v3 (no Provider, CSS-themed)
+
+Single import does it all: `@import "@heroui/styles";` in `app/styles/index.css` pulls in Tailwind v4, tw-animate-css, base, components, theme variables, utilities, variants. **No `<HeroUIProvider>`** in v3 - removed from `main.tsx`.
+
+`<html class="dark">` in `index.html` enables dark theme.
+
+Component API surprises vs HeroUI v2:
+- `Card.Content` (or `CardContent`), **not** `CardBody`
+- Button variant covers visual style: `primary | danger | danger-soft | ghost | outline | secondary | tertiary`. No separate `color` prop, no `solid` variant.
+- Button does not accept `href` / `as`. For navigation CTAs, use `buttonVariants({ variant, size })` on a plain `<a>` element.
+
+Runtime helpers: `buttonVariants`, `cardVariants`, `linkVariants` exported from `@heroui/react`.
+
+## Auth UI: Neon Auth (Better-Auth-backed)
+
+- `@/shared/auth` exports `authClient` from `createAuthClient(VITE_NEON_AUTH_URL)`
+- `@/app/providers/NeonAuthProvider` wraps children in `NeonAuthUIProvider`, passes TanStack-aware `navigate` + `Link` adapters so SPA navigation works inside the auth UI
+- `@/pages/auth/ui/AuthPage` renders `<AuthView pathname={pathname} />` inside a HeroUI Card. The pathname prop is **required** - AuthView does not read the URL itself
+
+## State management lanes
 
 | Concern | Tool | Pattern |
 |---|---|---|
-| Client UI state | Zustand 5 | one store slice per concern in `src/stores/` |
-| Server state | TanStack Query 5 + `api()` wrapper | one hook per resource in `src/queries/` |
+| Client UI state | Zustand 5 | `@/shared/stores/use<X>Store.ts` (none yet) |
+| Server state | TanStack Query 5 + `api()` wrapper | one hook per resource in `@/shared/queries/` (none yet) |
 | URL state | TanStack Router | file-based routes in `src/routes/` |
 
-No Redux. No useContext for global state. No `fetch` calls outside TanStack Query hooks. Auth session is read directly from `authClient.getSession()` inside the api wrapper, not stored in Zustand.
+**Hard rules** (mirror `.claude/rules/project.md`):
+- No `fetch` calls in components - go through `@/shared/api`'s `api()` wrapper
+- No raw `<a>` for navigation inside the SPA - use TanStack Router `<Link>` (or HeroUI `Link` for styled cases)
+- React 19 function components only
 
 ## Build pipeline
 
 ```
-src/*.tsx ── tsc -b ── (typecheck only) ── vite build ── dist/
-                                            │
-                                            ├── @vitejs/plugin-react        JSX, fast refresh
-                                            └── @tailwindcss/vite           Tailwind 4 inline
+src/**/*.tsx -> tsr generate -> tsc -b -> vite build -> dist/
+plugins: tanstackRouter (route codegen), react (JSX, Fast Refresh), tailwindcss (Tailwind 4)
 ```
 
-Production bundle (Phase 0): 191 KB JS / 60 KB gzipped, 6.7 KB CSS / 2 KB gzipped.
+Phase 9 production bundle: 1.19 MB JS / 346 KB gzipped, 32 KB CSS / ~5 KB gzipped. Bundle size is dominated by HeroUI + Better Auth UI; code-splitting deferred to a polish pass.
 
 ## Test pipeline
 
 ```
-src/**/*.test.tsx ── vitest run ── jsdom env ── @testing-library/react
+src/**/*.test.tsx -> vitest run -> jsdom env -> @testing-library/react
 ```
 
-`src/test/setup.ts` registers jest-dom matchers globally.
+`src/shared/test/setup.ts` registers jest-dom matchers globally.
 
-## Generated code
+## Generated artifacts (gitignored)
 
-`src/api/types.ts` is generated from `apps/api/openapi.yaml` via:
-
-```bash
-pnpm openapi:gen
-```
-
-It is gitignored. Always regenerate after editing the OpenAPI spec.
-
-## Dev proxy
-
-`vite.config.ts` proxies `/api/*` to `http://localhost:8080`, so the React app calls `fetch('/api/healthz')` and Vite forwards to the Gin server in dev.
-
-## Convention checklist
-
-- React 19 function components only.
-- Type all public callback props explicitly. Never `any`.
-- Tailwind utility classes in JSX. No inline `style` except for genuinely dynamic values.
-- One file per public component, kebab-case file names for non-components, PascalCase for components.
+- `src/routeTree.gen.ts` - regenerated via `pnpm routes:gen` (or chained inside typecheck/test/build)
+- `src/api/types.ts` (planned) - generated from `apps/api/openapi.yaml` via `pnpm openapi:gen`

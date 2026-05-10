@@ -7,6 +7,14 @@
         "serve"
       ],
       "type": "stdio"
+    },
+    "heroui-react": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@heroui/react-mcp@latest"
+      ],
+      "type": "stdio"
     }
   }
 }

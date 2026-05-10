@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
-import App from './App'
+import { HomePage } from './HomePage'
 
-describe('App', () => {
+describe('HomePage', () => {
   test('renders the CrowdTune heading', () => {
-    render(<App />)
+    render(<HomePage />)
     expect(screen.getByRole('heading', { name: /crowdtune/i })).toBeInTheDocument()
   })
 })

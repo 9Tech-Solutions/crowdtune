@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { NeonAuthUIProvider } from '@neondatabase/neon-js/auth/react'
 import { useNavigate, Link as TanStackLink } from '@tanstack/react-router'
 import type { LinkProps as TanStackLinkProps } from '@tanstack/react-router'
-import { authClient } from '../lib/auth-client'
+import { authClient } from '@/shared/auth'
 
 type Props = { children: ReactNode }
 

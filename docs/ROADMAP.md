@@ -15,10 +15,13 @@ Living document. Updated each phase. Source of truth for what is shipped, what i
 | 6 | CRG build + codemaps | 9 files / 18 nodes / 100 edges indexed; 5 codemaps under `docs/CODEMAPS/` |
 | 7 | Verification matrix | typecheck / lint / test / build all green; 4 commits pushed to main |
 | - | DB smoke test | Neon Postgres reachable; init migration applied (pgcrypto, citext); `/healthz` returns `db: ok` |
+| 8 | Neon Auth integration | 8a-8f code-complete + provisioned by user; migration `grant_neon_auth_user_read` applied; `/api/me` middleware live (401 missing_bearer / 401 invalid_token verified); auth routes at `/auth/$` with AuthView pathname prop; @neondatabase/neon-js/auth/react SDK + JWKS-cached Go middleware |
+| 8.5 | HeroUI v3 integration | `@heroui/react` 3.0.4 + `framer-motion` installed; CSS-themed (no Provider); `index.html` dark class; Card + buttonVariants in App + auth pages |
+| 9 | FSD frontend restructure | `src/{app, pages, widgets, features, entities, shared}` layered; tsconfig + vite path aliases; `src/routes/` thin route bindings only; HeroUI agent skill installed at project scope; `@heroui/react-mcp` registered in `.mcp.json` |
 
 ---
 
-## Phase 8 - Neon Auth integration (IN PROGRESS)
+## Phase 8 - Neon Auth integration (DONE)
 
 **Status (2026-05-10):**
 - 8a: pending (user task — provision Neon Auth in console; see `docs/setup/neon-auth.md`)

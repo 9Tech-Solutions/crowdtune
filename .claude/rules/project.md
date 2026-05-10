@@ -5,14 +5,31 @@ project rule wins.
 
 ## Stack lock
 
-- **Frontend**: React 19, Vite 5, TypeScript 5.7, Zustand 5, TanStack Router + Query, Tailwind 4, Vitest.
+- **Frontend**: React 19, Vite 8, TypeScript 6, Zustand 5, TanStack Router + Query, Tailwind 4, **HeroUI v3**, Vitest 4.
+- **Frontend architecture**: **Feature-Sliced Design (FSD)** - `src/{app, pages, widgets, features, entities, shared}` with imports flowing strictly downward. `src/routes/` is an FSD exception (TanStack file-based routing); each route file is a thin import from `@/pages/<name>`.
 - **Backend**: Go 1.25, Gin, pgx v5, sqlc, goose migrations, slog.
 - **DB**: Postgres on Neon.
+- **Auth**: Neon Auth (Better-Auth-backed); `@neondatabase/neon-js/auth/react` + `/auth/react/ui` + `/ui/css`.
 - **Contract**: OpenAPI 3.1 in `apps/api/openapi.yaml`, codegen for both server stubs (`oapi-codegen`) and TS
   client types (`openapi-typescript`).
-- **AI tooling**: code-review-graph MCP for context-efficient review.
+- **AI tooling**: code-review-graph MCP for context-efficient review; HeroUI agent skill + MCP server for component lookups.
 
-Do not propose alternate frameworks (Next.js, Echo, Fiber, Drizzle, sqlx, etc.) without explicit user approval.
+Do not propose alternate frameworks (Next.js, Echo, Fiber, Drizzle, sqlx, Redux, Stack Auth, etc.) without explicit user approval.
+
+## FSD layer rules
+
+- **Imports flow down only**: `app -> pages -> widgets -> features -> entities -> shared`. A layer never imports from a higher layer.
+- **Path aliases**: `@/app`, `@/pages`, `@/widgets`, `@/features`, `@/entities`, `@/shared`. Configured in both `tsconfig.app.json` (relative paths, no `baseUrl`) and `vite.config.ts` (resolve.alias via `fileURLToPath`).
+- **Public API per slice**: each slice has an `index.ts` barrel that exports its public surface. Consumers import from the slice barrel (`@/pages/home`), not deep paths (`@/pages/home/ui/HomePage`).
+- **`src/routes/` exception**: TanStack Router file-based routing requires routes in `src/routes/`. Each route file is a thin wrapper that imports a page component from `@/pages/<name>` and binds it via `createFileRoute`. No business logic in route files.
+
+## HeroUI v3 conventions
+
+- **No `<HeroUIProvider>`** - v3 is CSS-themed. The single `@import "@heroui/styles"` in `src/app/styles/index.css` pulls in Tailwind 4, base, components, theme, utilities, variants.
+- **Dark mode**: `<html class="dark">` in `index.html`. HeroUI components pick this up automatically.
+- **Component API**: `Card.Content` (or `CardContent`), not `CardBody`. Button `variant` covers visual style (primary | danger | danger-soft | ghost | outline | secondary | tertiary); no separate `color` prop, no `solid` variant.
+- **Anchor-as-button**: `<a className={buttonVariants({ variant, size })}>` for navigation CTAs. Button does not accept `href`/`as`.
+- **Component lookups**: prefer the project-scoped `heroui-react` skill at `.claude/skills/heroui-react/` and the `heroui-react` MCP server (registered in `.mcp.json`) over guessing from training data.
 
 ## Use scaffolding commands
 

@@ -1,0 +1,3 @@
+# FSD entities layer: domain models with their UI representations
+# Examples: track, party, venue, order, payment
+# Empty in Phase 0; populated as the domain model is defined

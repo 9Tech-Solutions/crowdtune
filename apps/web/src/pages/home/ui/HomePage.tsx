@@ -1,6 +1,6 @@
 import { Card, buttonVariants } from '@heroui/react'
 
-export default function App() {
+export function HomePage() {
   return (
     <main className="min-h-screen flex items-center justify-center px-4">
       <Card className="max-w-md w-full">
