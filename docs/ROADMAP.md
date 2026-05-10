@@ -26,7 +26,9 @@ Living document. Updated each phase. Source of truth for what is shipped, what i
 - 8c: done — `apps/web/src/api/client.ts` attaches `Authorization: Bearer <jwt>`; typed `ApiError`
 - 8d: done — `internal/auth/{jwks,middleware,middleware_test}.go`; 11 tests pass covering happy path + 8 failure modes
 - 8e: done — `/api/me` mounted under bearer-auth `/api` group; OpenAPI updated with `bearerAuth` security scheme; oapi-codegen regenerated
-- 8f: done — migration `20260510145536_grant_neon_auth_users_sync.sql` written but pending (will fail loudly if Phase 8a is incomplete, by design)
+- 8a: **done (user)** — Neon Auth enabled in console, all 5 env vars populated, DB password rotated after a leak in earlier session
+- 8f: done — migration renamed `20260510145536_grant_neon_auth_user_read.sql` (Neon Auth's actual schema is straight Better Auth: `user` not `users_sync`); applied 2026-05-10 in 235 ms
+- 8h (verification): done — auth middleware confirmed live in process: `/healthz` 200, `/api/me` 401 `missing_bearer` without bearer, 401 `invalid_token` with bogus bearer. Real-JWT end-to-end smoke pending user sign-up via web app.
 - 8g: in progress — codemap + project rules updated; CI auth-smoke job deferred (unit tests cover middleware exhaustively, no marginal value in a duplicate integration job until real JWKS exists)
 
 

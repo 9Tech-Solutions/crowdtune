@@ -61,7 +61,12 @@ func main() {
 	default:
 		api := router.Group("/api")
 		handlers.RegisterMe(api, jwks, cfg.Issuer, cfg.Audience)
-		logger.Info("auth middleware live", "issuer", cfg.Issuer, "audience", cfg.Audience)
+		// Do not log issuer / audience values: the issuer URL is single-tenant and
+		// identifies the Neon project. Booleans are sufficient for ops.
+		logger.Info("auth middleware live",
+			"issuer_set", cfg.Issuer != "",
+			"audience_set", cfg.Audience != "",
+		)
 	}
 
 	srv := &http.Server{

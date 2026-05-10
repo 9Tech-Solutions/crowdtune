@@ -7,7 +7,7 @@
 | Service | Purpose | Status |
 |---|---|---|
 | [Neon](https://neon.tech) Postgres | primary data store | URL placeholder in `.env.example`, not yet provisioned |
-| [Neon Auth](https://neon.com/docs/auth/overview) (Better-Auth-backed) | identity, JWT issuance, JWKS verification, `neon_auth.users_sync` schema | Phase 8 (8b-8f code-complete; 8a manual provisioning still pending — see `docs/setup/neon-auth.md`) |
+| [Neon Auth](https://neon.com/docs/auth/overview) (Better-Auth-backed) | identity, JWT issuance, JWKS verification, `neon_auth."user"` schema | Phase 8 (8b-8f code-complete; 8a manual provisioning still pending — see `docs/setup/neon-auth.md`) |
 | (future) Spotify Web API + Web Playback SDK | host-side playback engine | Phase 9; clean-room port from Festify reference |
 | (future) PromptPay / Stripe TH | pay-per-track | Phase 11 |
 | (future) Sentry / equivalent | error tracking | not yet wired; Festify uses raven-js (deprecated) |

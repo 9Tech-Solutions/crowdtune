@@ -1,7 +1,7 @@
 # Neon Auth setup runbook (Phase 8a)
 
 This is a one-time manual step. After it, paste the values into `.env` at the workspace root and tell the dev
-loop to apply migration `20260510145536_grant_neon_auth_users_sync`.
+loop to apply migration `20260510145536_grant_neon_auth_user_read`.
 
 ## 1. Enable Neon Auth in the console
 
@@ -41,16 +41,20 @@ returns it in the error message). Paste that exact string into `.env` and restar
 
 ## 4. Apply the migration
 
-After Neon Auth is enabled, the `neon_auth` schema and `neon_auth.users_sync` table become available.
-Apply the granting migration:
+After Neon Auth is enabled, the `neon_auth` schema and its tables become available. The schema is
+straight Better Auth: `user`, `session`, `account`, `verification`, `invitation`, `member`, `organization`,
+`project_config`, `jwks`. Our app JOINs against `neon_auth."user"` (note: `user` is a reserved word and
+must be quoted).
+
+Apply the granting migration from the workspace root (URL kept in a shell var so it doesn't echo):
 
 ```bash
-cd infra/migrations
-URL=$(grep '^DATABASE_URL_DIRECT=' ../../.env | cut -d= -f2-)
-goose -dir . postgres "$URL" up
+URL=$(grep '^DATABASE_URL_DIRECT=' .env | cut -d= -f2-)
+goose -dir infra/migrations postgres "$URL" up
 ```
 
-If it errors with `neon_auth schema is missing` you have not yet finished step 1 above.
+If it errors with `neon_auth schema is missing` you have not yet finished step 1 above. If it errors with
+`neon_auth.user table is missing`, Neon Auth has not finished provisioning - wait a minute and retry.
 
 ## 5. Restart the API
 
@@ -59,8 +63,9 @@ cd apps/api
 go build -o bin/api ./cmd/api && ./bin/api
 ```
 
-The startup log should now read `auth middleware live` with your issuer and audience. Without `JWKS_URL`
-the API logs `Neon Auth JWKS_URL not set; protected /api/* endpoints disabled`.
+The startup log should now read `auth middleware live` with `issuer_set: true` / `audience_set: true`.
+The actual issuer and audience VALUES are intentionally not logged - they identify your Neon project.
+Without `JWKS_URL` the API logs `Neon Auth JWKS_URL not set; protected /api/* endpoints disabled`.
 
 ## 6. Smoke test
 

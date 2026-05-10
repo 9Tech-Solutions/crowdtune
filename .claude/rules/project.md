@@ -43,7 +43,7 @@ and the review hooks expect it as the primary index.
 
 - **JWT is the canonical session.** No cookies on the API. Frontend uses `apps/web/src/lib/auth-client.ts` (Neon Auth / Better Auth); backend validates via `internal/auth.RequireUser`.
 - **Never call `fetch` from a React component.** Always go through `apps/web/src/api/client.ts`'s `api()` wrapper so the bearer is attached and `ApiError` lands consistently.
-- **`sub` is the user ID, everywhere.** Persist `user_id TEXT` columns referencing the JWT `sub` claim. Never duplicate Neon's user table; JOIN against `neon_auth.users_sync` instead.
+- **`sub` is the user ID, everywhere.** Persist `user_id TEXT` columns referencing the JWT `sub` claim. Never duplicate Neon's user table; JOIN against `neon_auth."user"` (the Better-Auth-provisioned user table; `user` is a reserved word and must be quoted).
 - **No JWT validation outside `internal/auth`.** Handlers call `auth.UserID(c)` / `auth.Email(c)` / `auth.Role(c)` to read claims from `gin.Context`. Direct token parsing in handlers is forbidden.
 - **Add new protected routes to the `/api` group.** `cmd/api/main.go` mounts the auth middleware once at the group level; never re-attach `RequireUser` per-route.
 - **Update `openapi.yaml` with `security: [bearerAuth: []]` for any new authed endpoint.** Public endpoints set `security: []` explicitly to opt out.
@@ -70,3 +70,13 @@ and the review hooks expect it as the primary index.
 - Festify source under `.reference/`.
 - Generated files except where explicitly tracked (lockfiles).
 - Pitch deck revisions without bumping version in filename (current: `docs/pitch/CrowdTune.pptx`).
+
+## Never transcribe secrets (extends global rule)
+
+- Never `cat`/`Read`/`grep`/`diff` the contents of `.env`, `.env.*`, `*.pem`, or any `*-key.json` into chat.
+  Use length-only probes when checking presence: `v=$(grep '^KEY=' .env | cut -d= -f2-); printf 'KEY=SET (len=%d)\n' "${#v}"`.
+- Pipe goose / API / curl output through a redactor sed when it might surface a `postgres://` URL, a Neon
+  hostname, or a JWT. The canonical sed:
+  `sed -E 's|postgres(ql)?://[^[:space:]"\]+|<DB_URL_REDACTED>|g; s|https://[a-z0-9-]+\.neon(auth)?\.[^[:space:]"\]+|<NEON_URL_REDACTED>|g; s|eyJ[A-Za-z0-9_=-]+\.[A-Za-z0-9_=-]+\.[A-Za-z0-9_=-]+|<JWT_REDACTED>|g'`.
+- The API logs `issuer_set` / `audience_set` booleans, not values. Keep it that way; do not regress.
+- If a secret leaks into chat, immediately tell the user to rotate. Do not try to retract or hide it.
