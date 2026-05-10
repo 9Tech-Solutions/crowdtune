@@ -83,4 +83,5 @@ logs/
 
 # --- Generated artifacts ---
 apps/web/src/api/types.ts
+apps/web/src/routeTree.gen.ts
 apps/api/internal/oapi/*.gen.go

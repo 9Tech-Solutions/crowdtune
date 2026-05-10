@@ -5,15 +5,18 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "routes:gen": "tsr generate",
+    "build": "tsr generate && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "typecheck": "tsc -b --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "typecheck": "tsr generate && tsc -b --noEmit",
+    "test": "tsr generate && vitest run",
+    "test:watch": "tsr generate && vitest",
     "openapi:gen": "openapi-typescript ../api/openapi.yaml -o src/api/types.ts"
   },
   "dependencies": {
+    "@neondatabase/auth-ui": "0.2.0-beta",
+    "@neondatabase/neon-js": "0.6.0-beta",
     "@tanstack/react-query": "^5.100.9",
     "@tanstack/react-router": "^1.169.2",
     "react": "^19.2.5",
@@ -23,6 +26,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.3.0",
+    "@tanstack/router-cli": "^1.166.43",
     "@tanstack/router-devtools": "^1.166.13",
     "@tanstack/router-plugin": "^1.167.35",
     "@testing-library/jest-dom": "^6.9.1",
