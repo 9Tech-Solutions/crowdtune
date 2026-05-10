@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: CrowdTune API
   version: 0.0.0
-  description: Phase 8 skeleton. /healthz public, /api/* requires Neon Auth bearer JWT.
+  description: Phase 8-9 skeleton. /healthz public, /api/* requires Neon Auth bearer JWT.
   license:
     name: Sustainable Use License v1.0
     url: ../../LICENSE.md
@@ -14,6 +14,8 @@ tags:
     description: Server meta and health
   - name: identity
     description: Authenticated user info
+  - name: spotify
+    description: Spotify OAuth token management
 paths:
   /healthz:
     get:
@@ -50,6 +52,55 @@ paths:
                 $ref: '#/components/schemas/MeResponse'
         '401':
           description: Bearer token missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/spotify/token:
+    post:
+      operationId: postSpotifyToken
+      tags: [spotify]
+      summary: Exchange a Spotify authorization code for an access token
+      description: >
+        Accepts the short-lived Spotify OAuth authorization code and redirect URI,
+        exchanges them with Spotify's token endpoint, encrypts the refresh token,
+        and persists credentials server-side. Returns the access token and metadata.
+        The refresh token is never returned to the client.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpotifyTokenExchangeRequest'
+      responses:
+        '200':
+          description: Spotify access token exchanged successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpotifyTokenExchangeResponse'
+        '400':
+          description: Request body is missing or has invalid fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Bearer token missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: Spotify token endpoint returned an error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error (encryption or DB failure)
           content:
             application/json:
               schema:
@@ -97,3 +148,26 @@ components:
         message:
           type: string
           description: Human-readable error message
+    SpotifyTokenExchangeRequest:
+      type: object
+      required: [code, redirectUri]
+      properties:
+        code:
+          type: string
+          description: The one-time Spotify OAuth authorization code from the redirect URL
+        redirectUri:
+          type: string
+          description: The redirect URI that was sent to Spotify during the authorization request
+    SpotifyTokenExchangeResponse:
+      type: object
+      required: [accessToken, expiresIn, scopes]
+      properties:
+        accessToken:
+          type: string
+          description: Spotify OAuth access token (valid approximately one hour)
+        expiresIn:
+          type: integer
+          description: Seconds until the access token expires
+        scopes:
+          type: string
+          description: Space-delimited Spotify OAuth scopes granted

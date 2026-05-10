@@ -7,4 +7,7 @@ tmp/
 .env
 coverage.out
 internal/oapi/*.gen.go
-internal/db/sqlc/*.sql.go
+# sqlc-generated code is committed (see internal/db/sqlc/). Run `sqlc generate`
+# after editing internal/db/queries/ and commit the diff. CI does not run sqlc.
+coverage.txt
+coverage.out

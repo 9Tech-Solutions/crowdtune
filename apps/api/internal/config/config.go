@@ -18,6 +18,13 @@ type Config struct {
 	JWKSURL  string `env:"NEON_AUTH_JWKS_URL"`
 	Issuer   string `env:"NEON_AUTH_ISSUER"`
 	Audience string `env:"NEON_AUTH_AUDIENCE" envDefault:"crowdtune"`
+
+	// Spotify OAuth (Phase 9). All optional; if any is unset, the Spotify
+	// endpoints are disabled and spotify_enabled=false is logged at startup.
+	SpotifyClientID     string `env:"SPOTIFY_CLIENT_ID"`
+	SpotifyClientSecret string `env:"SPOTIFY_CLIENT_SECRET"`
+	SpotifyTokenEncKey  string `env:"SPOTIFY_TOKEN_ENC_KEY"`
+	SpotifyRedirectURI  string `env:"SPOTIFY_REDIRECT_URI"`
 }
 
 func Load() (*Config, error) {

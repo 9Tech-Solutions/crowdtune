@@ -14,6 +14,8 @@ import (
 	"github.com/9Tech-Solutions/crowdtune/apps/api/internal/auth"
 	"github.com/9Tech-Solutions/crowdtune/apps/api/internal/config"
 	"github.com/9Tech-Solutions/crowdtune/apps/api/internal/handlers"
+	"github.com/9Tech-Solutions/crowdtune/apps/api/internal/spotify"
+	"github.com/9Tech-Solutions/crowdtune/apps/api/internal/tokencrypto"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -67,6 +69,34 @@ func main() {
 			"issuer_set", cfg.Issuer != "",
 			"audience_set", cfg.Audience != "",
 		)
+
+		// Spotify OAuth (Phase 9). All four env vars must be non-empty.
+		// Log set/unset booleans; never log the values themselves.
+		logger.Info("spotify config",
+			"spotify_client_id_set", cfg.SpotifyClientID != "",
+			"spotify_client_secret_set", cfg.SpotifyClientSecret != "",
+			"spotify_enc_key_set", cfg.SpotifyTokenEncKey != "",
+			"spotify_redirect_uri_set", cfg.SpotifyRedirectURI != "",
+		)
+		if cfg.SpotifyClientID != "" && cfg.SpotifyClientSecret != "" &&
+			cfg.SpotifyTokenEncKey != "" && cfg.SpotifyRedirectURI != "" {
+			encKey, err := tokencrypto.KeyFromHex(cfg.SpotifyTokenEncKey)
+			if err != nil {
+				logger.Error("spotify enc key invalid", "err", err)
+				logger.Info("spotify_enabled", "value", false)
+			} else {
+				spotifyClient := spotify.NewClient(
+					cfg.SpotifyClientID,
+					cfg.SpotifyClientSecret,
+					cfg.SpotifyRedirectURI,
+					encKey,
+				)
+				handlers.RegisterSpotify(api, spotifyClient, pool)
+				logger.Info("spotify_enabled", "value", true)
+			}
+		} else {
+			logger.Info("spotify_enabled", "value", false)
+		}
 	}
 
 	srv := &http.Server{
