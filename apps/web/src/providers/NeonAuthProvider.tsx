@@ -1,18 +1,30 @@
 import type { ReactNode } from 'react'
-import { NeonAuthUIProvider } from '@neondatabase/auth-ui'
+import { NeonAuthUIProvider } from '@neondatabase/neon-js/auth/react'
+import { useNavigate, Link as TanStackLink } from '@tanstack/react-router'
+import type { LinkProps as TanStackLinkProps } from '@tanstack/react-router'
 import { authClient } from '../lib/auth-client'
 
 type Props = { children: ReactNode }
 
+// Adapter: better-auth-ui calls Link with `href`; TanStack Router's Link wants `to`.
+function AuthLink({ href, ...rest }: { href: string } & Omit<TanStackLinkProps, 'to'>) {
+  return <TanStackLink to={href as TanStackLinkProps['to']} {...rest} />
+}
+
 export function NeonAuthProvider({ children }: Props) {
+  const navigate = useNavigate()
+
   return (
     <NeonAuthUIProvider
-      // The 0.2.0-beta auth-ui types do not yet line up with 0.6.0-beta neon-js;
-      // the runtime contract works. Revisit when both packages reach 1.0.
-      // @ts-expect-error - beta SDK type mismatch
       authClient={authClient}
       emailOTP
-      social={{ providers: ['google', 'spotify'] }}
+      // Spotify is declared as a future provider in the Phase 9 plan but is
+      // not yet configured in Neon Auth's console. Listing only Google here
+      // prevents the UI from rendering a Spotify button that 502s on click.
+      social={{ providers: ['google'] }}
+      navigate={(href) => navigate({ to: href as never })}
+      replace={(href) => navigate({ to: href as never, replace: true })}
+      Link={AuthLink as never}
     >
       {children}
     </NeonAuthUIProvider>

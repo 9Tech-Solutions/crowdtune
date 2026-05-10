@@ -15,7 +15,6 @@
     "openapi:gen": "openapi-typescript ../api/openapi.yaml -o src/api/types.ts"
   },
   "dependencies": {
-    "@neondatabase/auth-ui": "0.2.0-beta",
     "@neondatabase/neon-js": "0.6.0-beta",
     "@tanstack/react-query": "^5.100.9",
     "@tanstack/react-router": "^1.169.2",
