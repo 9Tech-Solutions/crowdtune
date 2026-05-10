@@ -1,6 +1,9 @@
 # --- Reference clones (never commit Festify or any other LGPL/copyleft source) ---
 .reference/
 
+# --- Claude Code user-local overlay ---
+.claude/settings.local.json
+
 # --- Secrets ---
 .env
 .env.*
