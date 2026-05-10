@@ -1,0 +1,53 @@
+# Festify clone is reference-only - never index it
+.reference/**
+
+# Build outputs
+node_modules/**
+dist/**
+build/**
+out/**
+.turbo/**
+.next/**
+.vite/**
+.cache/**
+
+# Go build artifacts
+apps/api/bin/**
+apps/api/vendor/**
+**/*.gen.go
+**/zz_generated_*.go
+
+# Generated TypeScript
+**/*.generated.ts
+**/*.gen.ts
+apps/web/src/api/types.ts
+
+# Dependency lockfiles do not need graph nodes
+pnpm-lock.yaml
+go.sum
+package-lock.json
+yarn.lock
+
+# CRG own data
+.code-review-graph/**
+
+# IDE / OS
+.vscode/**
+.idea/**
+.DS_Store
+Thumbs.db
+
+# Docs and assets
+docs/pitch/**
+**/*.pptx
+**/*.pdf
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.gif
+**/*.svg
+**/*.ico
+
+# Coverage
+coverage/**
+.nyc_output/**

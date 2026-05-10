@@ -1,0 +1,80 @@
+# --- Reference clones (never commit Festify or any other LGPL/copyleft source) ---
+.reference/
+
+# --- Secrets ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+service-account*.json
+firebase-adminsdk*.json
+
+# --- Node / pnpm ---
+node_modules/
+.pnpm-store/
+.pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- Build outputs ---
+dist/
+build/
+out/
+.next/
+.nuxt/
+.turbo/
+.cache/
+.parcel-cache/
+.vite/
+
+# --- Test / coverage ---
+coverage/
+.nyc_output/
+*.lcov
+
+# --- Go ---
+apps/api/bin/
+apps/api/vendor/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# --- Python (for tooling) ---
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.pytest_cache/
+
+# --- code-review-graph local data ---
+.code-review-graph/
+
+# --- IDE / editors ---
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.shared.json
+.idea/
+*.swp
+*.swo
+*~
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Logs ---
+*.log
+logs/
+
+# --- Generated artifacts ---
+apps/web/src/api/types.ts
+apps/api/internal/oapi/*.gen.go

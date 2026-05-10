@@ -1,0 +1,24 @@
+# Auto-detect text files and ensure LF line endings on checkout
+* text=auto eol=lf
+
+# Explicit binary types
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.pptx binary
+*.docx binary
+*.xlsx binary
+*.zip binary
+*.gz binary
+
+# Generated files - hide from diffs
+apps/web/src/api/types.ts linguist-generated=true -diff
+apps/api/internal/oapi/*.gen.go linguist-generated=true -diff
+pnpm-lock.yaml linguist-generated=true -diff
+go.sum linguist-generated=true -diff
+
+# Reference clones - never count toward language stats
+.reference/** linguist-vendored=true
