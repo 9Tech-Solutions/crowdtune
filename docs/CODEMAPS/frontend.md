@@ -21,12 +21,28 @@ src/
 │   └── auth/
 │       ├── ui/AuthPage.tsx
 │       └── index.ts
-├── widgets/            Reusable composite UI blocks (empty Phase 0)
-├── features/           Discrete user-facing features (empty Phase 0)
-├── entities/           Domain model components (empty Phase 0)
+├── widgets/            Reusable composite UI blocks (empty)
+├── features/           Discrete user-facing features (empty)
+├── entities/           Domain model: one slice per noun; each slice has model/, lib/, optional ui/, and a barrel index.ts
+│   ├── party/
+│   │   ├── model/types.ts          Party, PartySettings, Playback
+│   │   ├── lib/party-selectors.ts  isHost, playbackMasterId, isPlaybackMaster, hasOtherPlaybackMaster, playbackState
+│   │   └── index.ts                barrel re-exports types + 5 selectors
+│   ├── track/
+│   │   ├── model/types.ts          Track, TrackReference, Metadata
+│   │   ├── lib/identity.ts         trackIdentityKey, tracksAreEqual
+│   │   ├── lib/queue.ts            sortedQueue, currentTrack, currentTrackKey
+│   │   ├── lib/labels.ts           formatArtists, voteStatusLabel (CrowdTune-original copy)
+│   │   ├── lib/load-candidates.ts  fanartLoadCandidates, metadataLoadCandidates
+│   │   └── index.ts                barrel re-exports types + 9 selectors
+│   └── playlist/
+│       ├── model/types.ts          Playlist, PlaylistReference
+│       ├── lib/filter-playlists.ts filterPlaylists (case-insensitive substring, no sort, no trim)
+│       └── index.ts                barrel re-exports types + 1 selector
 ├── shared/             Cross-cutting utilities, no business logic
 │   ├── api/            api() wrapper + ApiError class (bearer attach)
 │   ├── auth/           authClient (Neon Auth singleton)
+│   ├── model/image.ts  Image type (lifted from entities/party to avoid same-layer cross-slice import)
 │   └── test/           Vitest setup
 ├── routes/             TanStack Router file-based routes (FSD exception)
 │   ├── __root.tsx      thin: imports NeonAuthProvider from @/app/providers
