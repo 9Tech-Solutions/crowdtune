@@ -14,3 +14,10 @@ sql:
         emit_prepared_queries: false
         emit_interface: true
         emit_exact_table_names: false
+        # user_id columns hold Better-Auth UUIDs but enter the system as the
+        # JWT sub claim (Go string). pgx accepts a string for a uuid
+        # parameter and scans uuid into a string. Override the default
+        # pgtype.UUID mapping per column so handlers stay string-typed.
+        overrides:
+          - column: spotify_credentials.user_id
+            go_type: string
