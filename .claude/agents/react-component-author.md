@@ -2,6 +2,8 @@
 name: react-component-author
 description: Implements ONE React component or hook in apps/web/ from a prose-only spec under docs/specs/. Never reads .reference/. Uses our stack (React 19, Zustand 5, TanStack Router/Query, Tailwind 4, HeroUI v3, TypeScript 5.7) and follows the project's "use scaffolding commands" rule.
 tools: Read, Glob, Grep, Edit, Write, Bash, mcp__heroui-react__list_components, mcp__heroui-react__get_component_docs, mcp__heroui-react__get_component_source_code, mcp__heroui-react__get_component_source_styles, mcp__heroui-react__get_docs, mcp__heroui-react__get_theme_variables
+mcpServers:
+  - heroui-react
 model: sonnet
 ---
 
