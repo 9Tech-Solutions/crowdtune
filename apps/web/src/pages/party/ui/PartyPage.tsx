@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation, Outlet } from '@tanstack/react-rou
 import { useQuery } from '@tanstack/react-query'
 import { Spinner, Button, Modal, Text } from '@heroui/react'
 
-import { QueueDrawer } from '@/widgets/queue-drawer'
+import { QueueDrawer, QueueNav } from '@/widgets/queue-drawer'
 import { PartyQueue } from '@/widgets/party-queue'
 import { getSession, signInWithSocial, type SessionUser } from '@/shared/auth'
 import { usePartyQuery } from '../api/use-party-query'
@@ -188,7 +188,7 @@ export function PartyPage() {
   // ---- Render: main layout --------------------------------------------------
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Narrow-viewport drawer: slides in from left when isDrawerOpen */}
+      {/* Narrow viewport: slide-in drawer with HeroUI modal chrome */}
       <div className="md:hidden">
         <QueueDrawer
           {...drawerProps}
@@ -197,14 +197,15 @@ export function PartyPage() {
         />
       </div>
 
-      {/* Wide-viewport permanent drawer: always open, fixed on left */}
-      <div className="hidden md:block fixed left-0 top-0 bottom-0 w-72 z-30">
-        <QueueDrawer
-          {...drawerProps}
-          isOpen
-          onClose={() => {}}
-        />
-      </div>
+      {/* Wide viewport: permanent sidebar - QueueNav rendered directly, NO
+          modal chrome. Avoids the focus trap that HeroUI's Drawer.Backdrop
+          would create when held open on wide screens. */}
+      <aside
+        aria-label="Party navigation"
+        className="hidden md:block fixed left-0 top-0 bottom-0 w-72 z-30 bg-background border-r border-default"
+      >
+        <QueueNav {...drawerProps} />
+      </aside>
 
       {/* Fixed header: full-width on narrow, offset right of drawer on wide */}
       <header className="fixed top-0 right-0 left-0 md:left-72 z-20 bg-background border-b border-default">

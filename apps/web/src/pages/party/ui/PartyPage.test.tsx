@@ -30,51 +30,60 @@ vi.mock('@/shared/auth', () => ({
   },
 }))
 
-// QueueDrawer mock renders test handles including an "Admin Mode" button
-// that invokes onEnterAdminMode - used to trigger the sign-in modal in tests.
+// QueueDrawer mock renders test handles only when the drawer is open
+// (narrow-viewport modal behavior). QueueNav renders the same handles
+// unconditionally (wide-viewport permanent sidebar - no modal chrome).
+type NavMockProps = {
+  username: string | null
+  currentSubView: string | null
+  queuePath: string
+  settingsPath: string
+  sharePath: string
+  tvPath: string
+  onEnterAdminMode: () => void
+  [key: string]: unknown
+}
+
+function NavMockInner({
+  username,
+  currentSubView,
+  queuePath,
+  settingsPath,
+  sharePath,
+  tvPath,
+  onEnterAdminMode,
+}: NavMockProps) {
+  return (
+    <nav
+      data-testid="queue-drawer"
+      data-subview={currentSubView}
+      data-queue-path={queuePath}
+      data-settings-path={settingsPath}
+      data-share-path={sharePath}
+      data-tv-path={tvPath}
+    >
+      <span data-testid="drawer-username">{username ?? ''}</span>
+      <button
+        type="button"
+        data-testid="drawer-enter-admin"
+        onClick={onEnterAdminMode}
+      >
+        Login for Admin Mode
+      </button>
+    </nav>
+  )
+}
+
+// Both mocks emit the same nav test-id ("queue-drawer") because tests assert
+// against "the rendered nav surface" without caring whether it came from the
+// narrow modal QueueDrawer (renders only when isOpen) or the wide-viewport
+// permanent QueueNav (always renders).
 vi.mock('@/widgets/queue-drawer', () => ({
   QueueDrawer: vi.fn(
-    ({
-      isOpen,
-      username,
-      currentSubView,
-      queuePath,
-      settingsPath,
-      sharePath,
-      tvPath,
-      onEnterAdminMode,
-    }: {
-      isOpen: boolean
-      onClose: () => void
-      username: string | null
-      currentSubView: string | null
-      queuePath: string
-      settingsPath: string
-      sharePath: string
-      tvPath: string
-      onEnterAdminMode: () => void
-      [key: string]: unknown
-    }) =>
-      isOpen ? (
-        <nav
-          data-testid="queue-drawer"
-          data-subview={currentSubView}
-          data-queue-path={queuePath}
-          data-settings-path={settingsPath}
-          data-share-path={sharePath}
-          data-tv-path={tvPath}
-        >
-          <span data-testid="drawer-username">{username ?? ''}</span>
-          <button
-            type="button"
-            data-testid="drawer-enter-admin"
-            onClick={onEnterAdminMode}
-          >
-            Login for Admin Mode
-          </button>
-        </nav>
-      ) : null,
+    ({ isOpen, ...rest }: { isOpen: boolean } & NavMockProps) =>
+      isOpen ? <NavMockInner {...rest} /> : null,
   ),
+  QueueNav: vi.fn((props: NavMockProps) => <NavMockInner {...props} />),
 }))
 
 vi.mock('@/widgets/party-queue', () => ({
