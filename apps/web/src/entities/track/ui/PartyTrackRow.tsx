@@ -44,6 +44,18 @@ export type PartyTrackRowProps = {
   isPlayButtonEnabled: boolean
   /** True while the vote mutation is in flight. Disables the vote button. */
   isVotePending: boolean
+  /**
+   * When true, applies extra top padding to create a visual gap from the
+   * currently-playing row directly above this one (index 1 in the queue).
+   * Defaults to false.
+   */
+  hasPlayingRowAbove?: boolean
+  /**
+   * When true, applies a subtle alternating stripe background.
+   * The queue passes this for rows at even DOM indices (1, 3, 5, …).
+   * Defaults to false.
+   */
+  isEvenRow?: boolean
   /** Called with the track reference and the new desired vote state. */
   onVote: (ref: TrackReference, newVote: boolean) => void
   /** Called to remove this track from the queue. */
@@ -89,6 +101,8 @@ export function PartyTrackRow({
   isTogglingPlayback,
   isPlayButtonEnabled,
   isVotePending,
+  hasPlayingRowAbove = false,
+  isEvenRow = false,
   onVote,
   onRemove,
   onTogglePlayback,
@@ -123,10 +137,16 @@ export function PartyTrackRow({
   // Skip button visibility (spec section 3)
   const showSkip = isPlaying && isOwner && track != null
 
-  // Row background for currently-playing row
-  const rowClass = isPlaying
-    ? 'flex items-center gap-3 px-4 py-4 bg-content2 rounded-lg'
-    : 'flex items-center gap-3 px-4 py-2'
+  // Row background: playing row gets content2 chip; even rows get a subtle stripe.
+  // hasPlayingRowAbove adds extra top padding for the visual gap after the playing row.
+  const rowClass = [
+    'flex items-center gap-3 px-4',
+    isPlaying ? 'py-4 bg-content2 rounded-lg' : 'py-2',
+    !isPlaying && isEvenRow ? 'bg-default' : '',
+    hasPlayingRowAbove ? 'mt-2' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   return (
     <div className={rowClass}>
