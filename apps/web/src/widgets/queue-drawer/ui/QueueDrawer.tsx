@@ -181,8 +181,6 @@ export function QueueDrawer({
     // This state combo means the account menu is open with no dismiss affordance.
     // This warning fires once per render in this state - intentional contract check.
     if (typeof console !== 'undefined') {
-      // Using console.warn for a deliberate contract-violation signal, not debug logging.
-      // eslint-disable-next-line no-console
       console.warn(
         '[QueueDrawer] isUserMenuOpen is true but username is null. ' +
         'The parent must reset isUserMenuOpen to false when username becomes null.',

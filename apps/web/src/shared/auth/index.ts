@@ -1,1 +1,2 @@
-export { authClient } from './auth-client'
+export { authClient, getSession, signInWithSocial } from './auth-client'
+export type { SessionUser, Session } from './auth-client'
