@@ -5,6 +5,7 @@ import { Spinner, Button, Modal, Text } from '@heroui/react'
 
 import { QueueDrawer, QueueNav } from '@/widgets/queue-drawer'
 import { PartyQueue } from '@/widgets/party-queue'
+import { PlaybackProgressBar } from '@/widgets/playback-progress-bar'
 import { getSession, signInWithSocial, type SessionUser } from '@/shared/auth'
 import { usePartyQuery } from '../api/use-party-query'
 import { usePlaybackQuery } from '../api/use-playback-query'
@@ -20,16 +21,6 @@ type SignInMode = 'normal' | 'follow-up'
 // spotify is wired through Phase 9 endpoints, not Neon Auth social sign-in.
 const ENABLED_PROVIDERS = ['google'] as const
 type EnabledProvider = (typeof ENABLED_PROVIDERS)[number]
-
-// ---------------------------------------------------------------------------
-// PlaybackProgressBarSlot
-//
-// Empty placeholder until the playback-progress-bar Festify view is ported.
-// Reserves the layout space for the eventual progress indicator.
-// ---------------------------------------------------------------------------
-function PlaybackProgressBarSlot() {
-  return <div className="h-1 w-full" aria-hidden />
-}
 
 // ---------------------------------------------------------------------------
 // MenuIcon
@@ -231,7 +222,11 @@ export function PartyPage() {
           </div>
         </div>
 
-        <PlaybackProgressBarSlot />
+        {/* The current track's duration is not yet available - it will arrive
+            with the per-track metadata query when the backend lands. For now
+            the widget receives null and renders an invisible 0% strip,
+            preserving the 1px layout reservation. */}
+        <PlaybackProgressBar playback={playback} durationMs={null} />
       </header>
 
       {/* Main content: top offset accounts for fixed header height */}
