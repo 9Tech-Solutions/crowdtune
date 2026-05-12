@@ -44,10 +44,19 @@ clean-room workflow described in `docs/translation-workflow.md`.
   - **9c (final)**: `/security-review` of the whole + a Spotify-stubbed integration test before merge.
   - Handler C (catalog client-credential token) deferred until search is needed. Handler D (account linking) likely fully replaced by Better Auth's native OAuth provider linking - evaluate before writing any code.
 - `[i]` `functions/lib/vote-processor.ts` - vote ranking + queue mutation backend. Phase 10 backend wedge. Spec at `docs/specs/vote-processor.spec.md` passed firewall review (zero code fences, ~3,100 words across 9 sections). Spec section 8 names three required tables (`parties`, `queue_tracks`, `user_votes`); all 8 open questions plus extra schema decisions locked by the orchestrator below. Slice plan:
-  - **10a (DONE)**: spec written + firewall verified + open questions resolved.
-  - **10b.1 (NEXT)**: single goose migration `add_parties_queue_tracks_user_votes.sql` creates all three tables in dependency order (parties first, then queue_tracks, then user_votes).
-  - **10b.2**: sqlc queries + Gin handlers (5 endpoints) + OpenAPI updates.
-  - **10c**: `/security-review` of the whole + integration test before merge.
+  - **10a (DONE `f90a370`)**: spec written + firewall verified + open questions resolved.
+  - **10b.1 (DONE `d44430a`)**: single goose migration `add_parties_queue_tracks_user_votes.sql` creates all three tables in dependency order (parties first, then queue_tracks, then user_votes). Migration written but not yet applied to the live database.
+  - **10b.2.A (DONE `d43fd7e`)**: sqlc queries + Gin handler for `POST /api/parties` + `GET /api/parties/{partyId}` + 6-char short-code generator with 5-retry-on-23505 collision loop. sqlc.yaml gained uuid->string overrides for `parties.host_user_id` and `user_votes.user_id`. 11 new handler tests.
+  - **10b.2.B (DONE `a420c39`)**: sqlc query + Gin handler for `GET /api/parties/{partyId}/tracks`. Returns the queue ordered by `(order_idx ASC, added_at ASC)`. 6 new tests.
+  - **10b.2.C (DONE `132e7cb`)**: sqlc queries + Gin handler for `PUT/DELETE /api/parties/{partyId}/tracks/{provider}/{trackId}/vote`. Implements all four spec cases inside a single transaction (READ COMMITTED + `SELECT ... FOR UPDATE` on the affected `queue_tracks` row). VoteStorer + VoteOps interface split keeps tests in-memory. 15 new tests covering each algorithm branch.
+  - **10c (DONE)**: `/security-review` ran on the full Phase 10 stack. The reviewer flagged one CRITICAL (auth bypass: `auth.RequireUser` was per-route on `/me` only; the `/api` group had no `Use()` call so every other route was unauthenticated). Fixed at `5fda177` by mounting `api.Use(auth.RequireUser(...))` at the group level in `cmd/api/main.go` and simplifying `RegisterMe` to drop the per-route attachment. The fix retroactively closes the same bypass on Phase 9's `POST /api/spotify/token`. 84 Go tests pass with `-race`.
+
+  **Phase 10 follow-ups** (not blockers; file as new tasks before next Phase):
+  - Add `http.MaxBytesReader` body cap (64 KB) + `name` length validation (200 chars) on `POST /api/parties`. Currently the request body is unbounded.
+  - Close the TOCTOU race on `GetTopmostTrack` inside the vote transaction: the topmost-track read is not held under `FOR UPDATE`, so two concurrent first-vote-on-empty-queue transactions could both assign `playingSentinel` to different tracks. Fix candidates: elevate isolation to REPEATABLE READ + retry, OR add a partial unique index `CREATE UNIQUE INDEX idx_one_playing_per_party ON queue_tracks (party_id) WHERE order_idx = playingSentinel` and let 23505 trigger a retry, OR `FOR UPDATE` on the topmost row.
+  - Add rate limiting (project-wide; the vote endpoint and `POST /api/spotify/token` share this exposure).
+  - Black-box integration test that builds the full router via the `main.go` path and asserts 401 on unauthenticated `/api` access. Prevents regression of the wiring bug closed in `10c`.
+  - Apply the migration to the live database (requires `make migrate-up` with `DATABASE_URL_DIRECT` set; deferred to deployment window).
 
   **Lock-now decisions (orchestrator, before implementer dispatch):**
   - **Q1 + Q7 (concurrency model)**: synchronous in-handler ranking inside a single Postgres BEGIN/COMMIT at READ COMMITTED isolation. Lock the affected `queue_tracks` row with `SELECT ... FOR UPDATE` before reading topmost and computing new order. Re-read topmost track inside the same transaction (Q7 lock: yes). New-track races (when no row exists yet to lock) are serialized by the `user_votes` PK uniqueness. No application-level retry loop because pessimistic locking blocks. No Postgres NOTIFY / no background worker / no LISTEN - the handler is the trigger.
