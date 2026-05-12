@@ -22,6 +22,15 @@ const maxPartyIDRetries = 5
 // pgErrUniqueViolation is the PostgreSQL SQLSTATE code for unique_violation.
 const pgErrUniqueViolation = "23505"
 
+// maxCreatePartyBodyBytes caps the inbound request body to bound memory and CPU
+// per request. 64 KiB is roomy for a reasonable PartySettings blob but rejects
+// pathological payloads before JSON parsing.
+const maxCreatePartyBodyBytes = 64 * 1024
+
+// maxPartyNameLen caps the party name length. 200 chars is generous for any
+// reasonable display name and short enough to keep listing UIs predictable.
+const maxPartyNameLen = 200
+
 // PartiesStorer is the minimal DB surface that the parties handler requires.
 // Satisfied by *sqlc.Queries; tests inject a fake.
 type PartiesStorer interface {
@@ -65,6 +74,10 @@ type createPartyRequest struct {
 func (h *partiesHandler) createParty(c *gin.Context) {
 	userID := auth.UserID(c)
 
+	// Cap the inbound body before parsing. ShouldBindJSON will surface a
+	// readable error if the limit is exceeded, which we map to 400.
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxCreatePartyBodyBytes)
+
 	var req createPartyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Info("create_party", "user_id", userID, "outcome", "bad_request", "reason", "invalid_json")
@@ -81,6 +94,14 @@ func (h *partiesHandler) createParty(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    "missing_field",
 			"message": "'name' is required and must be non-empty",
+		})
+		return
+	}
+	if len(req.Name) > maxPartyNameLen {
+		slog.Info("create_party", "user_id", userID, "outcome", "bad_request", "reason", "name_too_long", "name_len", len(req.Name))
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    "invalid_field",
+			"message": "'name' exceeds the maximum length",
 		})
 		return
 	}

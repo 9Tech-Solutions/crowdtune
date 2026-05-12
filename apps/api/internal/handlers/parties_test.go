@@ -154,6 +154,55 @@ func TestCreateParty_WhitespaceOnlyName(t *testing.T) {
 	assert.Equal(t, "missing_field", resp["code"])
 }
 
+// TestCreateParty_NameTooLong verifies 400 invalid_field when name exceeds 200 chars.
+func TestCreateParty_NameTooLong(t *testing.T) {
+	store := newFakePartiesStorer()
+	r := buildPartiesRouter(t, store, "user1")
+
+	longName := bytes.Repeat([]byte("a"), 201) // 201 chars; limit is 200
+
+	w := postJSONParties(t, r, "/api/parties", map[string]string{"name": string(longName)})
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	var resp map[string]any
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, "invalid_field", resp["code"])
+}
+
+// TestCreateParty_BodyTooLarge verifies 400 when the request body exceeds the cap.
+func TestCreateParty_BodyTooLarge(t *testing.T) {
+	store := newFakePartiesStorer()
+	r := buildPartiesRouter(t, store, "user1")
+
+	// 70 KiB of payload, well over the 64 KiB cap. Crafted as valid JSON so the
+	// failure point is the body-size limit, not a parse error from garbage.
+	bigSettings := make(map[string]string, 700)
+	for i := 0; i < 700; i++ {
+		bigSettings[string(rune('a'+i%26))+string(rune('a'+i/26))+"_pad"] = string(bytes.Repeat([]byte("x"), 100))
+	}
+	payload, err := json.Marshal(map[string]any{
+		"name":     "Big Body Party",
+		"settings": bigSettings,
+	})
+	require.NoError(t, err)
+	require.Greater(t, len(payload), 64*1024, "test payload must exceed the body cap")
+
+	req := httptest.NewRequest(http.MethodPost, "/api/parties", bytes.NewReader(payload))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	var resp map[string]any
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	// MaxBytesReader surfaces a generic parse error to ShouldBindJSON, so the
+	// handler returns the standard missing_field path. The important assertion
+	// is that the request did NOT reach the DB layer.
+	assert.Equal(t, "missing_field", resp["code"])
+	// No party was created.
+	assert.Empty(t, store.parties)
+}
+
 // TestCreateParty_MissingBody verifies 400 on a completely missing body.
 func TestCreateParty_MissingBody(t *testing.T) {
 	store := newFakePartiesStorer()
