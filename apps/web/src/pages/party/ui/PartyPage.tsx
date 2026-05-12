@@ -159,6 +159,13 @@ export function PartyPage() {
     onLogout: () => { /* logout not yet ported */ },
   }
 
+  // Short-circuit for TV mode: TvPage fills the viewport with no chrome.
+  // Spec lock-now: views-view-tv.spec.md section 10 ("Route is /party/$partyId/tv,
+  // standalone full-viewport page outside the party shell").
+  if (currentSubView === 'tv') {
+    return <Outlet />
+  }
+
   // ---- Render: error state --------------------------------------------------
   if (partyError) {
     return (

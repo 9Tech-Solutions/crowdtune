@@ -158,4 +158,16 @@ describe('TvTrackCard', () => {
     expect(screen.getByText('5')).toBeInTheDocument()
     expect(screen.queryByText('1')).not.toBeInTheDocument()
   })
+
+  it('Applies the optional style prop to the root list item', () => {
+    // The parent TV strip needs to attach viewTransitionName on each card.
+    // The style prop is what unblocks that without an intermediate wrapper
+    // that would break the ul/li ARIA list semantics.
+    const { container } = renderCard({
+      style: { viewTransitionName: 'tv-row-spotify-track1' },
+    })
+    const root = container.querySelector('li[role="listitem"]')
+    expect(root).toBeInTheDocument()
+    expect((root as HTMLElement).style.viewTransitionName).toBe('tv-row-spotify-track1')
+  })
 })

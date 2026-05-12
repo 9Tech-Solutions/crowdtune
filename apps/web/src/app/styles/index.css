@@ -1,1 +1,22 @@
 @import "@heroui/styles";
+
+/* Ken Burns slow pan-and-zoom for TV mode background (OQ-2 lock: pure CSS, no library). */
+@keyframes tv-ken-burns {
+  0% {
+    transform: translate3d(0%, 0%, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(-4%, -4%, 0) scale(1.12);
+  }
+}
+
+.tv-ken-burns {
+  animation: tv-ken-burns 30s ease-in-out alternate infinite;
+}
+
+/* Disable Ken Burns when user prefers reduced motion (spec section 9). */
+@media (prefers-reduced-motion: reduce) {
+  .tv-ken-burns {
+    animation: none;
+  }
+}

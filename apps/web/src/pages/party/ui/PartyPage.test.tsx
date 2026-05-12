@@ -224,6 +224,28 @@ describe('sub-view: non-queue routes', () => {
 })
 
 // ---------------------------------------------------------------------------
+// 5b. Sub-view: tv route short-circuits the party shell entirely
+// ---------------------------------------------------------------------------
+
+describe('sub-view: tv (short-circuit)', () => {
+  it('returns just the Outlet on the tv route - no QueueDrawer, no header chrome', () => {
+    // Spec lock-now (views-view-tv.spec.md section 10): the TV route is a
+    // standalone full-viewport page outside the party shell. PartyPage must
+    // short-circuit to <Outlet /> before any shell chrome (drawer, header,
+    // sign-in modal) renders.
+    mockUseLocation.mockReturnValue({
+      pathname: '/party/test-party/tv',
+    } as ReturnType<typeof useLocation>)
+    mockUsePartyQuery.mockReturnValue({ data: makeParty(), isLoading: false, error: null })
+    renderPage()
+    // No drawer surface (neither narrow modal nor wide permanent sidebar).
+    expect(screen.queryAllByTestId('queue-drawer')).toHaveLength(0)
+    // Hamburger button is part of the party-shell header; also absent.
+    expect(screen.queryByRole('button', { name: /open menu/i })).not.toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
 // 6. Hamburger button toggles the narrow-viewport drawer
 // ---------------------------------------------------------------------------
 

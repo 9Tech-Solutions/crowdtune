@@ -1,3 +1,5 @@
+import type { CSSProperties } from 'react'
+
 import type { Track, TrackReference, Metadata } from '../model/types'
 import { formatArtists } from '../lib/labels'
 import { pickCoverUrl } from '../lib/cover'
@@ -20,13 +22,21 @@ export type TvTrackCardProps = {
 
   /** Display metadata - title, artists, coverImages. Null while fetching. */
   metadata: Metadata | null
+
+  /**
+   * Inline style applied to the root list item. Used by parents that need
+   * to attach view-transition-name (or similar per-element CSS) without
+   * inserting an intermediate wrapper element that would break the
+   * ul/li ARIA list semantics.
+   */
+  style?: CSSProperties
 }
 
 // -------------------------------------------------------------------------
 // Component
 // -------------------------------------------------------------------------
 
-export function TvTrackCard({ track, metadata }: TvTrackCardProps) {
+export function TvTrackCard({ track, metadata, style }: TvTrackCardProps) {
   // All display values are derived from the controlled props.
   const voteCount = track?.voteCount ?? 0
   const title = metadata?.title ?? 'Loading...'
@@ -41,7 +51,7 @@ export function TvTrackCard({ track, metadata }: TvTrackCardProps) {
   return (
     // role="listitem" matches the parent TV view's role="list" strip.
     // The tile has no interactive elements so no focus management is needed.
-    <li role="listitem" className="w-52 flex flex-col">
+    <li role="listitem" style={style} className="w-52 flex flex-col">
       {/* Cover area - square, dominant, large drop shadow */}
       <div className="relative aspect-square w-52 shadow-2xl">
         {coverUrl ? (
