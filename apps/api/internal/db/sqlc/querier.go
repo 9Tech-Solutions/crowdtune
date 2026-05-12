@@ -9,19 +9,30 @@ import (
 )
 
 type Querier interface {
+	CountVotesForTrack(ctx context.Context, arg CountVotesForTrackParams) (int32, error)
 	// Party queries.
 	// Table: parties (created by infra/migrations/20260512113057_add_parties_queue_tracks_user_votes.sql)
 	// One row per party. The id is a 6-character alphanumeric short code generated
 	// server-side. The host_user_id maps to the JWT sub claim (Better-Auth user id).
 	CreateParty(ctx context.Context, arg CreatePartyParams) (Party, error)
+	DeleteQueueTrack(ctx context.Context, arg DeleteQueueTrackParams) error
 	DeleteSpotifyCredentialsByUserID(ctx context.Context, userID string) error
+	DeleteVote(ctx context.Context, arg DeleteVoteParams) error
 	GetParty(ctx context.Context, id string) (Party, error)
 	GetSpotifyCredentialsByUserID(ctx context.Context, userID string) (SpotifyCredential, error)
+	GetTopmostTrack(ctx context.Context, partyID string) (QueueTrack, error)
+	GetTrackForUpdate(ctx context.Context, arg GetTrackForUpdateParams) (QueueTrack, error)
+	InsertQueueTrack(ctx context.Context, arg InsertQueueTrackParams) (QueueTrack, error)
+	// User vote queries.
+	// Table: user_votes (created by infra/migrations/20260512113057_add_parties_queue_tracks_user_votes.sql)
+	// One row per (party_id, provider, provider_track_id, user_id); PK ensures idempotency.
+	InsertVote(ctx context.Context, arg InsertVoteParams) error
 	// Queue track queries.
 	// Table: queue_tracks (created by infra/migrations/20260512113057_add_parties_queue_tracks_user_votes.sql)
 	// One row per unique (party_id, provider, provider_track_id) combination.
 	// order_idx drives the playback queue order; tiebreaker is added_at ASC.
 	ListQueueTracksByParty(ctx context.Context, partyID string) ([]QueueTrack, error)
+	UpdateQueueTrack(ctx context.Context, arg UpdateQueueTrackParams) (QueueTrack, error)
 	// Spotify credentials queries.
 	// Table: spotify_credentials (created by infra/migrations/20260510191527_add_spotify_credentials.sql)
 	// One row per authenticated host user. The refresh token is stored AES-GCM

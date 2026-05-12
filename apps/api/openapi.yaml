@@ -157,6 +157,122 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/parties/{partyId}/tracks/{provider}/{trackId}/vote:
+    put:
+      operationId: castVote
+      tags: [queue]
+      summary: Cast a vote for a track in the party queue
+      description: >
+        Idempotent: if the user has already voted for this track the operation is
+        a no-op (ON CONFLICT DO NOTHING) and the current track state is returned.
+        Because a PUT always results in vote_count >= 1 the response is always 200
+        with the track body (Cases 2 and 3 only; Cases 1 and 4 cannot fire on PUT).
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: partyId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The party short code
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Music provider identifier (e.g. "spotify")
+        - name: trackId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Provider-specific track identifier
+      responses:
+        '200':
+          description: Track state after the vote was applied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueTrack'
+        '401':
+          description: Bearer token missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Party not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      operationId: retractVote
+      tags: [queue]
+      summary: Retract the caller's vote for a track in the party queue
+      description: >
+        Idempotent: if the user has no vote recorded the operation is a no-op and
+        204 is returned. If the retraction drops the track's vote_count to zero
+        and the track is neither playing nor a fallback, the track is removed from
+        the queue and 204 is returned. Otherwise the updated track is returned with
+        200.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: partyId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The party short code
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Music provider identifier (e.g. "spotify")
+        - name: trackId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Provider-specific track identifier
+      responses:
+        '200':
+          description: Track state after the vote was retracted (track still in queue)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueTrack'
+        '204':
+          description: >
+            No content - either the track was not in the queue (no-op) or it was
+            removed because vote_count dropped to zero (and it is not playing/fallback).
+        '401':
+          description: Bearer token missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Party not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/me:
     get:
       operationId: getMe

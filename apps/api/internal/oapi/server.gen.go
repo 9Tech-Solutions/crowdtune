@@ -203,6 +203,12 @@ type ServerInterface interface {
 	// List the ordered queue for a party
 	// (GET /api/parties/{partyId}/tracks)
 	ListQueueTracks(c *gin.Context, partyId string)
+	// Retract the caller's vote for a track in the party queue
+	// (DELETE /api/parties/{partyId}/tracks/{provider}/{trackId}/vote)
+	RetractVote(c *gin.Context, partyId string, provider string, trackId string)
+	// Cast a vote for a track in the party queue
+	// (PUT /api/parties/{partyId}/tracks/{provider}/{trackId}/vote)
+	CastVote(c *gin.Context, partyId string, provider string, trackId string)
 	// Exchange a Spotify authorization code for an access token
 	// (POST /api/spotify/token)
 	PostSpotifyToken(c *gin.Context)
@@ -304,6 +310,96 @@ func (siw *ServerInterfaceWrapper) ListQueueTracks(c *gin.Context) {
 	siw.Handler.ListQueueTracks(c, partyId)
 }
 
+// RetractVote operation middleware
+func (siw *ServerInterfaceWrapper) RetractVote(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "partyId" -------------
+	var partyId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "partyId", c.Param("partyId"), &partyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter partyId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "provider" -------------
+	var provider string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "provider", c.Param("provider"), &provider, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter provider: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "trackId" -------------
+	var trackId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "trackId", c.Param("trackId"), &trackId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter trackId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(string(BearerAuthScopes), []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.RetractVote(c, partyId, provider, trackId)
+}
+
+// CastVote operation middleware
+func (siw *ServerInterfaceWrapper) CastVote(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "partyId" -------------
+	var partyId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "partyId", c.Param("partyId"), &partyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter partyId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "provider" -------------
+	var provider string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "provider", c.Param("provider"), &provider, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter provider: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "trackId" -------------
+	var trackId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "trackId", c.Param("trackId"), &trackId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter trackId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(string(BearerAuthScopes), []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CastVote(c, partyId, provider, trackId)
+}
+
 // PostSpotifyToken operation middleware
 func (siw *ServerInterfaceWrapper) PostSpotifyToken(c *gin.Context) {
 
@@ -363,6 +459,8 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/api/parties", wrapper.CreateParty)
 	router.GET(options.BaseURL+"/api/parties/:partyId", wrapper.GetParty)
 	router.GET(options.BaseURL+"/api/parties/:partyId/tracks", wrapper.ListQueueTracks)
+	router.DELETE(options.BaseURL+"/api/parties/:partyId/tracks/:provider/:trackId/vote", wrapper.RetractVote)
+	router.PUT(options.BaseURL+"/api/parties/:partyId/tracks/:provider/:trackId/vote", wrapper.CastVote)
 	router.POST(options.BaseURL+"/api/spotify/token", wrapper.PostSpotifyToken)
 	router.GET(options.BaseURL+"/healthz", wrapper.GetHealth)
 }
@@ -580,6 +678,146 @@ func (response ListQueueTracks500JSONResponse) VisitListQueueTracksResponse(w ht
 	return err
 }
 
+type RetractVoteRequestObject struct {
+	PartyId  string `json:"partyId"`
+	Provider string `json:"provider"`
+	TrackId  string `json:"trackId"`
+}
+
+type RetractVoteResponseObject interface {
+	VisitRetractVoteResponse(w http.ResponseWriter) error
+}
+
+type RetractVote200JSONResponse QueueTrack
+
+func (response RetractVote200JSONResponse) VisitRetractVoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RetractVote204Response struct {
+}
+
+func (response RetractVote204Response) VisitRetractVoteResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RetractVote401JSONResponse ErrorResponse
+
+func (response RetractVote401JSONResponse) VisitRetractVoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RetractVote404JSONResponse ErrorResponse
+
+func (response RetractVote404JSONResponse) VisitRetractVoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RetractVote500JSONResponse ErrorResponse
+
+func (response RetractVote500JSONResponse) VisitRetractVoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CastVoteRequestObject struct {
+	PartyId  string `json:"partyId"`
+	Provider string `json:"provider"`
+	TrackId  string `json:"trackId"`
+}
+
+type CastVoteResponseObject interface {
+	VisitCastVoteResponse(w http.ResponseWriter) error
+}
+
+type CastVote200JSONResponse QueueTrack
+
+func (response CastVote200JSONResponse) VisitCastVoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CastVote401JSONResponse ErrorResponse
+
+func (response CastVote401JSONResponse) VisitCastVoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CastVote404JSONResponse ErrorResponse
+
+func (response CastVote404JSONResponse) VisitCastVoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CastVote500JSONResponse ErrorResponse
+
+func (response CastVote500JSONResponse) VisitCastVoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type PostSpotifyTokenRequestObject struct {
 	Body *PostSpotifyTokenJSONRequestBody
 }
@@ -707,6 +945,12 @@ type StrictServerInterface interface {
 	// List the ordered queue for a party
 	// (GET /api/parties/{partyId}/tracks)
 	ListQueueTracks(ctx context.Context, request ListQueueTracksRequestObject) (ListQueueTracksResponseObject, error)
+	// Retract the caller's vote for a track in the party queue
+	// (DELETE /api/parties/{partyId}/tracks/{provider}/{trackId}/vote)
+	RetractVote(ctx context.Context, request RetractVoteRequestObject) (RetractVoteResponseObject, error)
+	// Cast a vote for a track in the party queue
+	// (PUT /api/parties/{partyId}/tracks/{provider}/{trackId}/vote)
+	CastVote(ctx context.Context, request CastVoteRequestObject) (CastVoteResponseObject, error)
 	// Exchange a Spotify authorization code for an access token
 	// (POST /api/spotify/token)
 	PostSpotifyToken(ctx context.Context, request PostSpotifyTokenRequestObject) (PostSpotifyTokenResponseObject, error)
@@ -879,6 +1123,62 @@ func (sh *strictHandler) ListQueueTracks(ctx *gin.Context, partyId string) {
 	}
 }
 
+// RetractVote operation middleware
+func (sh *strictHandler) RetractVote(ctx *gin.Context, partyId string, provider string, trackId string) {
+	var request RetractVoteRequestObject
+
+	request.PartyId = partyId
+	request.Provider = provider
+	request.TrackId = trackId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.RetractVote(ctx, request.(RetractVoteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RetractVote")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(RetractVoteResponseObject); ok {
+		if err := validResponse.VisitRetractVoteResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CastVote operation middleware
+func (sh *strictHandler) CastVote(ctx *gin.Context, partyId string, provider string, trackId string) {
+	var request CastVoteRequestObject
+
+	request.PartyId = partyId
+	request.Provider = provider
+	request.TrackId = trackId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CastVote(ctx, request.(CastVoteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CastVote")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(CastVoteResponseObject); ok {
+		if err := validResponse.VisitCastVoteResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // PostSpotifyToken operation middleware
 func (sh *strictHandler) PostSpotifyToken(ctx *gin.Context) {
 	var request PostSpotifyTokenRequestObject
@@ -939,45 +1239,53 @@ func (sh *strictHandler) GetHealth(ctx *gin.Context) {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"7Fptc9s28v8qO/z/Z2rfyJLipJ2cOvfCdtJGOdf2+aF50Xg8ELkS0ZAAA4By1Iy/+80uQJGSoNhpm1wy",
+	"kzeJTAL7hN3fPoDvk1SXlVaonE1G7xOb5lgK/nlkUDg8E8YtzvFtjdbR08roCo2TyGuUKJH+z9CmRlZO",
+	"apWMkmfSVoVYAL2FqTbgcoSKCMGO0moPy8otenCbS4e2EinuOSPLErPdpJe4RYXJKLHOSDVL7nqJReek",
+	"mjE/kWWSmIjirCOHMzX21mQ4rcTbuuHakIBJoSdgnTaYwRzNRDhZgrDw8uL05LBlrie/Y+qSu7teYvBt",
+	"LQ1myeg3r+31xqpe8twYbc7RVlpZ3LRSqrOIlX4RaS4V7hkUmZgUCEhUgBdHzFCitWIWofOiLoVap9Ks",
+	"3iC0plLg1iyPKfcCReHy7dplE/oXVV0SQf0m6SWZvlUdWp2zdMLVdm19bOEcjWX11rU9OBtDeAk7Fss5",
+	"mt17tQxseyRrTMVjad1/aqzx0oj0jd2uq+P3m1LxZvBvQZsMycEmC//zRmbv4ODiqAciyzC7EY7+SnqJ",
+	"dFgysf83OE1Gyf8N2mAchEgctHKRpEF0YYxYbKgZpItp+AtuVwpLIQv6MdWmFC4ZhSeRYzG6YAIbL2rL",
+	"em5a5qJmGSAthCxhanTJaPDy1SXsnKBWcFC7HGg7jJ/df5INn5iODFWR6GMcyw7cpnDji1N4+sPwEfAa",
+	"ciknS7ROlFXSa82RCYd79CZmklxbd2XRjCPKk5a2ngTl9bQDhLQtRi5mwx/20lwYkTo0IIoqF6ou0ci0",
+	"QbdcG7cVN6Q9SJ2cR4DjVY4uxy46SwtpbQwqVyxA+G1LkhOtCxSKaD4A9rvKfg5UTyIOwYaJnctBIYXl",
+	"zCSzH8FgVqtMKAdTiUXGz6dGK4cqA4pI4eREFjKuSF1l97pXIazbCws/2sXWIkBmSatZOIoVL+zYtnP6",
+	"vU4cdIWOBVIHcjaiiSHsg8ou9YPbHBV7AQMT3ArrERCc5sdvic+DA03an0RRTIJU21xZ2g1u9AOmYS/Y",
+	"ejZDy/tirs2IPc7ebfI405a9FKRqpf8RCn2LBuaiqNEC+/9UGo7tpVpSuR+etNykcjhDw3iKUzSoUrwv",
+	"C/BpnC9XU4bUDo90rSJHcVKXEzQUgrTIdq2SCwsGU5RzzCISrflaK16XX8dIK6fSWzpHzKkuKu3kdHGp",
+	"36B6/i7NhZrh1royXjFd5ghaeQ+BQA9OOYGI2uXayD88itP2NtcYzKShHHR1fhxNauH9lZFxnh0CY3C5",
+	"cOxcFpUjT24EyWoiyBxXpTFBywfWYl1xHm7IbcldpClay4sjyXnVhrwUHK2FnbkoZAaiqox+J0vhsFiQ",
+	"8SHXtYnW6fiukgbtOMYHU60yC7VysvAW6vIKO6MRYlNdoY2JTn1DhoUsJaHqqip+F8yMUK7r6Fss3zVS",
+	"V5El+9g5rIXkhuVjmfzM6LnM0OzZClM5lWkIS5mhcnIq0cQsW4VdkR6itlQGhPcdMrCD/VkfXifW2+V1",
+	"cn9ttWTDVch1rBuymNZGusUFwZJXc4LCoCGrt3/91CDfy1eXyXoOb6u+nUN0Ds0e/bFLJWEffiWv4zQ5",
+	"lwJevvr3BQgHJ89PT24Ori5f3NCTm6vz4z6fDQlB8M1MW/1y56rkjuSVaqojp5ALi/B0759g32CBTqs+",
+	"DHJuc/6Aqp4UMu3BQFRy8A8IBrLQiu3ZsbxJLylkiiHyfFmUXNTWCam4G7uyCMd+Bcwf9YeUe02RjJJ+",
+	"f9DvD47HR89PLp73y4yLe+movE6OjL7NLmuFcHA2TjrNUDLsD/tDTlMVKlHJZJQ87nuylXA5HwgL7uuz",
+	"GTK2klcyFFEtlPyM7hePMx4zeNP+cOhxl6oe3iSqqpApbxv8bn0r5rPRfbmq02vwIawan6qU4KhuAfjO",
+	"cWGbtXDdmpcUfTJ89LcJttqmR2Q79Kw9KpXSWgJ0qhIVo+FKCCSj31ad/7fru+teYuuyFGaRjJJzdLVR",
+	"y3xACqfs2dTDfGdbG3B3wOgnqB6mEs+/Sa6JIZ8nVbwBVyptIznfT2uo0lF4GwrkW0moDhbNHM3eDBW5",
+	"AWawtZ9oO4k+XEblhgmmuuSaotvJ9F8TWK76WWd+lHigQesOdbb4284zMqG6WwU16iHuNlz97/Mor13E",
+	"k/gFhJIbbM0JZloXxcI79fDzOXUwDUx0xh1ex6+pGgy+7Xsf++WFXC/5/nNaa6wcGiWKEDV+nPZxge/d",
+	"shuJndhuAnkjtAfveek4u/sQcjfhVAkjSnRoLIuzWbN2YzwyJpC0jlJG00KOksA+WY+fXse06wXE9SdM",
+	"I/fEVolOZMIJ77FPPp+HePZKO5jqWn2VHvozuuAUjRVhsj5Heri/DtqpaHDbdQCiRGhBFIVvmm/CoNTo",
+	"W7u8H5jJOaog1fYJqk9pnTEqdfc8YpA4MSjeoOnDkqECvmoAHpe24wgWgqCQ39L6UOMJ8FjYqfAiiW1t",
+	"WvyQaPw6I3DbWDzilKfhxN62g3AopHWws3ECq9bf/RIzzjc8+Tg8IUfhyNIrbkChLTYyoJ/63Y8ng/dN",
+	"Q3o3eM+P6N1cuzAZKtBFZkTjDMtKk9lGIP0MmutWKnWU5oEYGExJ0MyL3MQ2uaQApfd0BUJlsD98Qo8M",
+	"gwlmfRhPwziJWxbakRld2XbC+Z1l+jeprv1o6A80mmm1Q1BpQaHkYWVViAX5nmIzNQPK3upig6Wed9sj",
+	"b9qogKdE9lZa9Go38+aWlF/oQXR/OIyB27nX7lcy8/8U2Hp/cdYRE6MdcPwFOR40w4lwDy78xaB792Jx",
+	"ExX4BVjHlezUhWsiDp9bniE3ffuOCytlUYAM8M6ovu9RdG36oyFID3sQAmH1ioCQsDtihx2OyV3GaBe4",
+	"+6CYYCpqi92oo5Cs/BUDR98ORYp0HHfaNTE3aKJtl2LgWwb66jNQgC32mlQUBU9Y2Ft9Egohqjpzi+b2",
+	"aT0v9ZKqdh+XWERhUGQLZpiFinZ55bI1yeycnsDR6clPx+OjS3h2Cienly/GJz/vLjNGuIsF14nFFcA/",
+	"DP4v4OzqEkRxKxb02taFo8a+Gxev6+HwMf4LHoUc5k+DxfHb9odDnxjaaOSJwc6RsGhhn6V6DFoVix/B",
+	"P3vEz55AKhQ7jzQIWpEsu9GBkLDf8sq3vPLBvMJsMfsGyV8/JFO4U0f9p0C4aQ5C6A1cc4EZn34fpClW",
+	"zpfiDBp7hZxv3ApGLokJwLrXuz3AcKXKxEoPiYHMd8sLS5VVWirXA1SpWTScDU4N2twv6jHtCo2V1llI",
+	"DXIci8I2A3krM2yHFRu3orS9Gc/4cfwKfd9J0Nks6/rwWUVaSFTRkfyZtq57ffyJ5vIfuup/0IB++IlF",
+	"2e73jcOs3U/7jd8G+V/7IB92QsASAGgDzw5hKmRRG9+xfD/c/3wCNq62CiltNAv1Z1C3cXIQS/CLfRtD",
+	"eKxWvLwDwgF0AwyHi/EP3Ur4T4Q/5Z3y2kfIMXP6Y+aCVs49smdYocpQpRItCEMIKtJcTAr0p/34M572",
+	"Ury6gklNmTE10slUFK2YHNb88fTama9N2+ao6NxIxWeH1E8rTJ2c82VyjvwpVnOWlEHoIJkeiRCruI+1",
+	"F2O+/Dwhd64aDQYFvci1daOnw6fDhFwtEH4f14/YsVx54xKhSmU5Noveg80bZv5mY7lveRceKZjbO1Zy",
+	"7G6+XG0RJNqt2/2IoZDWEV4Rjbmmny0FX5Js7l+tLQLuCSVmWCJ/JRf2N9F0d3333wAAAP//",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

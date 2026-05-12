@@ -76,6 +76,9 @@ func main() {
 		// Queue listing (Phase 10b.2.B). Always-on; no env-var gating.
 		handlers.RegisterQueue(api, pool)
 
+		// Vote casting/retracting (Phase 10c). Always-on; no env-var gating.
+		handlers.RegisterVotes(api, pool)
+
 		// Spotify OAuth (Phase 9). All four env vars must be non-empty.
 		// Log set/unset booleans; never log the values themselves.
 		logger.Info("spotify config",

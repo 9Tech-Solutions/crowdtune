@@ -9,6 +9,114 @@ import (
 	"context"
 )
 
+const deleteQueueTrack = `-- name: DeleteQueueTrack :exec
+DELETE FROM queue_tracks
+WHERE party_id = $1
+  AND provider = $2
+  AND provider_track_id = $3
+`
+
+type DeleteQueueTrackParams struct {
+	PartyID         string `json:"party_id"`
+	Provider        string `json:"provider"`
+	ProviderTrackID string `json:"provider_track_id"`
+}
+
+func (q *Queries) DeleteQueueTrack(ctx context.Context, arg DeleteQueueTrackParams) error {
+	_, err := q.db.Exec(ctx, deleteQueueTrack, arg.PartyID, arg.Provider, arg.ProviderTrackID)
+	return err
+}
+
+const getTopmostTrack = `-- name: GetTopmostTrack :one
+SELECT party_id, provider, provider_track_id, vote_count, order_idx, is_fallback, added_at
+FROM queue_tracks
+WHERE party_id = $1
+ORDER BY order_idx ASC, added_at ASC
+LIMIT 1
+`
+
+func (q *Queries) GetTopmostTrack(ctx context.Context, partyID string) (QueueTrack, error) {
+	row := q.db.QueryRow(ctx, getTopmostTrack, partyID)
+	var i QueueTrack
+	err := row.Scan(
+		&i.PartyID,
+		&i.Provider,
+		&i.ProviderTrackID,
+		&i.VoteCount,
+		&i.OrderIdx,
+		&i.IsFallback,
+		&i.AddedAt,
+	)
+	return i, err
+}
+
+const getTrackForUpdate = `-- name: GetTrackForUpdate :one
+SELECT party_id, provider, provider_track_id, vote_count, order_idx, is_fallback, added_at
+FROM queue_tracks
+WHERE party_id = $1
+  AND provider = $2
+  AND provider_track_id = $3
+FOR UPDATE
+`
+
+type GetTrackForUpdateParams struct {
+	PartyID         string `json:"party_id"`
+	Provider        string `json:"provider"`
+	ProviderTrackID string `json:"provider_track_id"`
+}
+
+func (q *Queries) GetTrackForUpdate(ctx context.Context, arg GetTrackForUpdateParams) (QueueTrack, error) {
+	row := q.db.QueryRow(ctx, getTrackForUpdate, arg.PartyID, arg.Provider, arg.ProviderTrackID)
+	var i QueueTrack
+	err := row.Scan(
+		&i.PartyID,
+		&i.Provider,
+		&i.ProviderTrackID,
+		&i.VoteCount,
+		&i.OrderIdx,
+		&i.IsFallback,
+		&i.AddedAt,
+	)
+	return i, err
+}
+
+const insertQueueTrack = `-- name: InsertQueueTrack :one
+INSERT INTO queue_tracks (party_id, provider, provider_track_id, vote_count, order_idx, is_fallback)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING party_id, provider, provider_track_id, vote_count, order_idx, is_fallback, added_at
+`
+
+type InsertQueueTrackParams struct {
+	PartyID         string `json:"party_id"`
+	Provider        string `json:"provider"`
+	ProviderTrackID string `json:"provider_track_id"`
+	VoteCount       int32  `json:"vote_count"`
+	OrderIdx        int64  `json:"order_idx"`
+	IsFallback      bool   `json:"is_fallback"`
+}
+
+func (q *Queries) InsertQueueTrack(ctx context.Context, arg InsertQueueTrackParams) (QueueTrack, error) {
+	row := q.db.QueryRow(ctx, insertQueueTrack,
+		arg.PartyID,
+		arg.Provider,
+		arg.ProviderTrackID,
+		arg.VoteCount,
+		arg.OrderIdx,
+		arg.IsFallback,
+	)
+	var i QueueTrack
+	err := row.Scan(
+		&i.PartyID,
+		&i.Provider,
+		&i.ProviderTrackID,
+		&i.VoteCount,
+		&i.OrderIdx,
+		&i.IsFallback,
+		&i.AddedAt,
+	)
+	return i, err
+}
+
 const listQueueTracksByParty = `-- name: ListQueueTracksByParty :many
 
 SELECT party_id, provider, provider_track_id, vote_count, order_idx, is_fallback, added_at
@@ -47,4 +155,43 @@ func (q *Queries) ListQueueTracksByParty(ctx context.Context, partyID string) ([
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateQueueTrack = `-- name: UpdateQueueTrack :one
+UPDATE queue_tracks
+SET order_idx = $1,
+    vote_count = $2
+WHERE party_id = $3
+  AND provider = $4
+  AND provider_track_id = $5
+RETURNING party_id, provider, provider_track_id, vote_count, order_idx, is_fallback, added_at
+`
+
+type UpdateQueueTrackParams struct {
+	OrderIdx        int64  `json:"order_idx"`
+	VoteCount       int32  `json:"vote_count"`
+	PartyID         string `json:"party_id"`
+	Provider        string `json:"provider"`
+	ProviderTrackID string `json:"provider_track_id"`
+}
+
+func (q *Queries) UpdateQueueTrack(ctx context.Context, arg UpdateQueueTrackParams) (QueueTrack, error) {
+	row := q.db.QueryRow(ctx, updateQueueTrack,
+		arg.OrderIdx,
+		arg.VoteCount,
+		arg.PartyID,
+		arg.Provider,
+		arg.ProviderTrackID,
+	)
+	var i QueueTrack
+	err := row.Scan(
+		&i.PartyID,
+		&i.Provider,
+		&i.ProviderTrackID,
+		&i.VoteCount,
+		&i.OrderIdx,
+		&i.IsFallback,
+		&i.AddedAt,
+	)
+	return i, err
 }
