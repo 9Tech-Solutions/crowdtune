@@ -16,6 +16,8 @@ tags:
     description: Authenticated user info
   - name: parties
     description: Party creation and metadata
+  - name: queue
+    description: Party queue listing and voting
   - name: spotify
     description: Spotify OAuth token management
 paths:
@@ -100,6 +102,49 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Party'
+        '404':
+          description: Party not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/parties/{partyId}/tracks:
+    get:
+      operationId: listQueueTracks
+      tags: [queue]
+      summary: List the ordered queue for a party
+      description: >
+        Returns all queue_tracks rows for the given party ordered by order_idx ASC,
+        with added_at ASC as the tiebreaker. Returns an empty array when the queue
+        is empty. Requires a valid bearer JWT.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: partyId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The party short code
+      responses:
+        '200':
+          description: Ordered queue track list (empty array when queue is empty)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListQueueTracksResponse'
+        '401':
+          description: Bearer token missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Party not found
           content:
@@ -266,6 +311,45 @@ components:
         message:
           type: string
           description: Human-readable error message
+    ListQueueTracksResponse:
+      type: object
+      required: [tracks]
+      properties:
+        tracks:
+          type: array
+          description: Queue tracks ordered by order_idx ASC, added_at ASC
+          items:
+            $ref: '#/components/schemas/QueueTrack'
+    QueueTrack:
+      type: object
+      required: [reference, voteCount, orderIdx, isFallback, addedAt]
+      properties:
+        reference:
+          $ref: '#/components/schemas/TrackReference'
+        voteCount:
+          type: integer
+          description: Number of votes this track has received
+        orderIdx:
+          type: integer
+          format: int64
+          description: Position in the queue; lower values play first
+        isFallback:
+          type: boolean
+          description: Whether this track was added as a fallback suggestion
+        addedAt:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the track was added to the queue
+    TrackReference:
+      type: object
+      required: [provider, id]
+      properties:
+        provider:
+          type: string
+          description: Music provider identifier (e.g. "spotify")
+        id:
+          type: string
+          description: Provider-specific track identifier
     SpotifyTokenExchangeRequest:
       type: object
       required: [code, redirectUri]

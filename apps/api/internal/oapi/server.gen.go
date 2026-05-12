@@ -92,6 +92,12 @@ type HealthResponseDb string
 // HealthResponseStatus defines model for HealthResponse.Status.
 type HealthResponseStatus string
 
+// ListQueueTracksResponse defines model for ListQueueTracksResponse.
+type ListQueueTracksResponse struct {
+	// Tracks Queue tracks ordered by order_idx ASC, added_at ASC
+	Tracks []QueueTrack `json:"tracks"`
+}
+
 // MeResponse defines model for MeResponse.
 type MeResponse struct {
 	Email *openapi_types.Email `json:"email,omitempty"`
@@ -128,6 +134,22 @@ type Party struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
+// QueueTrack defines model for QueueTrack.
+type QueueTrack struct {
+	// AddedAt ISO 8601 timestamp when the track was added to the queue
+	AddedAt time.Time `json:"addedAt"`
+
+	// IsFallback Whether this track was added as a fallback suggestion
+	IsFallback bool `json:"isFallback"`
+
+	// OrderIdx Position in the queue; lower values play first
+	OrderIdx  int64          `json:"orderIdx"`
+	Reference TrackReference `json:"reference"`
+
+	// VoteCount Number of votes this track has received
+	VoteCount int `json:"voteCount"`
+}
+
 // SpotifyTokenExchangeRequest defines model for SpotifyTokenExchangeRequest.
 type SpotifyTokenExchangeRequest struct {
 	// Code The one-time Spotify OAuth authorization code from the redirect URL
@@ -147,6 +169,15 @@ type SpotifyTokenExchangeResponse struct {
 
 	// Scopes Space-delimited Spotify OAuth scopes granted
 	Scopes string `json:"scopes"`
+}
+
+// TrackReference defines model for TrackReference.
+type TrackReference struct {
+	// Id Provider-specific track identifier
+	Id string `json:"id"`
+
+	// Provider Music provider identifier (e.g. "spotify")
+	Provider string `json:"provider"`
 }
 
 // bearerAuthContextKey is the context key for bearerAuth security scheme
@@ -169,6 +200,9 @@ type ServerInterface interface {
 	// Get party metadata by short code
 	// (GET /api/parties/{partyId})
 	GetParty(c *gin.Context, partyId string)
+	// List the ordered queue for a party
+	// (GET /api/parties/{partyId}/tracks)
+	ListQueueTracks(c *gin.Context, partyId string)
 	// Exchange a Spotify authorization code for an access token
 	// (POST /api/spotify/token)
 	PostSpotifyToken(c *gin.Context)
@@ -243,6 +277,33 @@ func (siw *ServerInterfaceWrapper) GetParty(c *gin.Context) {
 	siw.Handler.GetParty(c, partyId)
 }
 
+// ListQueueTracks operation middleware
+func (siw *ServerInterfaceWrapper) ListQueueTracks(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "partyId" -------------
+	var partyId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "partyId", c.Param("partyId"), &partyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter partyId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(string(BearerAuthScopes), []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListQueueTracks(c, partyId)
+}
+
 // PostSpotifyToken operation middleware
 func (siw *ServerInterfaceWrapper) PostSpotifyToken(c *gin.Context) {
 
@@ -301,6 +362,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/api/me", wrapper.GetMe)
 	router.POST(options.BaseURL+"/api/parties", wrapper.CreateParty)
 	router.GET(options.BaseURL+"/api/parties/:partyId", wrapper.GetParty)
+	router.GET(options.BaseURL+"/api/parties/:partyId/tracks", wrapper.ListQueueTracks)
 	router.POST(options.BaseURL+"/api/spotify/token", wrapper.PostSpotifyToken)
 	router.GET(options.BaseURL+"/healthz", wrapper.GetHealth)
 }
@@ -454,6 +516,70 @@ func (response GetParty500JSONResponse) VisitGetPartyResponse(w http.ResponseWri
 	return err
 }
 
+type ListQueueTracksRequestObject struct {
+	PartyId string `json:"partyId"`
+}
+
+type ListQueueTracksResponseObject interface {
+	VisitListQueueTracksResponse(w http.ResponseWriter) error
+}
+
+type ListQueueTracks200JSONResponse ListQueueTracksResponse
+
+func (response ListQueueTracks200JSONResponse) VisitListQueueTracksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListQueueTracks401JSONResponse ErrorResponse
+
+func (response ListQueueTracks401JSONResponse) VisitListQueueTracksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListQueueTracks404JSONResponse ErrorResponse
+
+func (response ListQueueTracks404JSONResponse) VisitListQueueTracksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListQueueTracks500JSONResponse ErrorResponse
+
+func (response ListQueueTracks500JSONResponse) VisitListQueueTracksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type PostSpotifyTokenRequestObject struct {
 	Body *PostSpotifyTokenJSONRequestBody
 }
@@ -578,6 +704,9 @@ type StrictServerInterface interface {
 	// Get party metadata by short code
 	// (GET /api/parties/{partyId})
 	GetParty(ctx context.Context, request GetPartyRequestObject) (GetPartyResponseObject, error)
+	// List the ordered queue for a party
+	// (GET /api/parties/{partyId}/tracks)
+	ListQueueTracks(ctx context.Context, request ListQueueTracksRequestObject) (ListQueueTracksResponseObject, error)
 	// Exchange a Spotify authorization code for an access token
 	// (POST /api/spotify/token)
 	PostSpotifyToken(ctx context.Context, request PostSpotifyTokenRequestObject) (PostSpotifyTokenResponseObject, error)
@@ -724,6 +853,32 @@ func (sh *strictHandler) GetParty(ctx *gin.Context, partyId string) {
 	}
 }
 
+// ListQueueTracks operation middleware
+func (sh *strictHandler) ListQueueTracks(ctx *gin.Context, partyId string) {
+	var request ListQueueTracksRequestObject
+
+	request.PartyId = partyId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListQueueTracks(ctx, request.(ListQueueTracksRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListQueueTracks")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ListQueueTracksResponseObject); ok {
+		if err := validResponse.VisitListQueueTracksResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // PostSpotifyToken operation middleware
 func (sh *strictHandler) PostSpotifyToken(ctx *gin.Context) {
 	var request PostSpotifyTokenRequestObject
@@ -784,38 +939,45 @@ func (sh *strictHandler) GetHealth(ctx *gin.Context) {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"dN2wuln9JwAA//8=",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,
