@@ -70,6 +70,9 @@ func main() {
 			"audience_set", cfg.Audience != "",
 		)
 
+		// Parties (Phase 10b.2). Always-on; no env-var gating.
+		handlers.RegisterParties(api, pool)
+
 		// Spotify OAuth (Phase 9). All four env vars must be non-empty.
 		// Log set/unset booleans; never log the values themselves.
 		logger.Info("spotify config",

@@ -14,6 +14,8 @@ tags:
     description: Server meta and health
   - name: identity
     description: Authenticated user info
+  - name: parties
+    description: Party creation and metadata
   - name: spotify
     description: Spotify OAuth token management
 paths:
@@ -32,6 +34,80 @@ paths:
                 $ref: '#/components/schemas/HealthResponse'
         '503':
           description: Server is up but a critical dependency is down
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/parties:
+    post:
+      operationId: createParty
+      tags: [parties]
+      summary: Create a new party
+      description: >
+        Creates a new party with a server-generated 6-character alphanumeric short code.
+        The authenticated user becomes the party host.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePartyRequest'
+      responses:
+        '201':
+          description: Party created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Party'
+        '400':
+          description: Request body is missing or has invalid fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Bearer token missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/parties/{partyId}:
+    get:
+      operationId: getParty
+      tags: [parties]
+      summary: Get party metadata by short code
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: partyId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The 6-character party short code
+      responses:
+        '200':
+          description: Party metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Party'
+        '404':
+          description: Party not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
           content:
             application/json:
               schema:
@@ -113,6 +189,37 @@ components:
       bearerFormat: JWT
       description: Neon Auth (Better-Auth) JWT. Validated via JWKS at NEON_AUTH_JWKS_URL.
   schemas:
+    Party:
+      type: object
+      required: [id, shortId, name, hostUserId, settings, isActive, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          description: 6-character alphanumeric party short code
+        shortId:
+          type: string
+          description: Alias for id; redundant field for frontend compatibility
+        name:
+          type: string
+          description: Display name of the party
+        hostUserId:
+          type: string
+          description: JWT sub claim of the party host
+        settings:
+          type: object
+          description: Opaque party settings blob
+          additionalProperties: true
+        isActive:
+          type: boolean
+          description: Whether the party is currently active
+        createdAt:
+          type: string
+          format: date-time
+          description: ISO 8601 creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: ISO 8601 last-updated timestamp
     HealthResponse:
       type: object
       required: [status, db]
@@ -138,6 +245,17 @@ components:
           format: email
         role:
           type: string
+    CreatePartyRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: Display name for the party (non-empty, whitespace-trimmed)
+        settings:
+          type: object
+          description: Opaque party settings blob stored verbatim as JSONB
+          additionalProperties: true
     ErrorResponse:
       type: object
       required: [code, message]

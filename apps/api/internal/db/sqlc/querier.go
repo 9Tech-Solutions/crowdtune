@@ -9,7 +9,13 @@ import (
 )
 
 type Querier interface {
+	// Party queries.
+	// Table: parties (created by infra/migrations/20260512113057_add_parties_queue_tracks_user_votes.sql)
+	// One row per party. The id is a 6-character alphanumeric short code generated
+	// server-side. The host_user_id maps to the JWT sub claim (Better-Auth user id).
+	CreateParty(ctx context.Context, arg CreatePartyParams) (Party, error)
 	DeleteSpotifyCredentialsByUserID(ctx context.Context, userID string) error
+	GetParty(ctx context.Context, id string) (Party, error)
 	GetSpotifyCredentialsByUserID(ctx context.Context, userID string) (SpotifyCredential, error)
 	// Spotify credentials queries.
 	// Table: spotify_credentials (created by infra/migrations/20260510191527_add_spotify_credentials.sql)

@@ -8,6 +8,26 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Party struct {
+	ID         string             `json:"id"`
+	HostUserID string             `json:"host_user_id"`
+	Name       string             `json:"name"`
+	Settings   []byte             `json:"settings"`
+	IsActive   bool               `json:"is_active"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+}
+
+type QueueTrack struct {
+	PartyID         string             `json:"party_id"`
+	Provider        string             `json:"provider"`
+	ProviderTrackID string             `json:"provider_track_id"`
+	VoteCount       int32              `json:"vote_count"`
+	OrderIdx        int64              `json:"order_idx"`
+	IsFallback      bool               `json:"is_fallback"`
+	AddedAt         pgtype.Timestamptz `json:"added_at"`
+}
+
 type SpotifyCredential struct {
 	ID                    pgtype.UUID        `json:"id"`
 	UserID                string             `json:"user_id"`
@@ -18,4 +38,12 @@ type SpotifyCredential struct {
 	LastRefreshedAt       pgtype.Timestamptz `json:"last_refreshed_at"`
 	CreatedAt             pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+}
+
+type UserVote struct {
+	PartyID         string             `json:"party_id"`
+	Provider        string             `json:"provider"`
+	ProviderTrackID string             `json:"provider_track_id"`
+	UserID          string             `json:"user_id"`
+	VotedAt         pgtype.Timestamptz `json:"voted_at"`
 }

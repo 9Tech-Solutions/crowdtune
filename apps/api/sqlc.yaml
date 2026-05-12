@@ -21,3 +21,7 @@ sql:
         overrides:
           - column: spotify_credentials.user_id
             go_type: string
+          - column: parties.host_user_id
+            go_type: string
+          - column: user_votes.user_id
+            go_type: string

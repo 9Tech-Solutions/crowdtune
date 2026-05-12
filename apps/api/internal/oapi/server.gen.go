@@ -14,9 +14,11 @@ import (
 	"net/url"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gin-gonic/gin"
+	"github.com/oapi-codegen/runtime"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
@@ -57,6 +59,15 @@ func (e HealthResponseStatus) Valid() bool {
 	}
 }
 
+// CreatePartyRequest defines model for CreatePartyRequest.
+type CreatePartyRequest struct {
+	// Name Display name for the party (non-empty, whitespace-trimmed)
+	Name string `json:"name"`
+
+	// Settings Opaque party settings blob stored verbatim as JSONB
+	Settings *map[string]interface{} `json:"settings,omitempty"`
+}
+
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
 	// Code Machine-readable error code
@@ -90,6 +101,33 @@ type MeResponse struct {
 	UserId string `json:"user_id"`
 }
 
+// Party defines model for Party.
+type Party struct {
+	// CreatedAt ISO 8601 creation timestamp
+	CreatedAt time.Time `json:"createdAt"`
+
+	// HostUserId JWT sub claim of the party host
+	HostUserId string `json:"hostUserId"`
+
+	// Id 6-character alphanumeric party short code
+	Id string `json:"id"`
+
+	// IsActive Whether the party is currently active
+	IsActive bool `json:"isActive"`
+
+	// Name Display name of the party
+	Name string `json:"name"`
+
+	// Settings Opaque party settings blob
+	Settings map[string]interface{} `json:"settings"`
+
+	// ShortId Alias for id; redundant field for frontend compatibility
+	ShortId string `json:"shortId"`
+
+	// UpdatedAt ISO 8601 last-updated timestamp
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
 // SpotifyTokenExchangeRequest defines model for SpotifyTokenExchangeRequest.
 type SpotifyTokenExchangeRequest struct {
 	// Code The one-time Spotify OAuth authorization code from the redirect URL
@@ -114,6 +152,9 @@ type SpotifyTokenExchangeResponse struct {
 // bearerAuthContextKey is the context key for bearerAuth security scheme
 type bearerAuthContextKey string
 
+// CreatePartyJSONRequestBody defines body for CreateParty for application/json ContentType.
+type CreatePartyJSONRequestBody = CreatePartyRequest
+
 // PostSpotifyTokenJSONRequestBody defines body for PostSpotifyToken for application/json ContentType.
 type PostSpotifyTokenJSONRequestBody = SpotifyTokenExchangeRequest
 
@@ -122,6 +163,12 @@ type ServerInterface interface {
 	// Return the authenticated user's identity claims
 	// (GET /api/me)
 	GetMe(c *gin.Context)
+	// Create a new party
+	// (POST /api/parties)
+	CreateParty(c *gin.Context)
+	// Get party metadata by short code
+	// (GET /api/parties/{partyId})
+	GetParty(c *gin.Context, partyId string)
 	// Exchange a Spotify authorization code for an access token
 	// (POST /api/spotify/token)
 	PostSpotifyToken(c *gin.Context)
@@ -152,6 +199,48 @@ func (siw *ServerInterfaceWrapper) GetMe(c *gin.Context) {
 	}
 
 	siw.Handler.GetMe(c)
+}
+
+// CreateParty operation middleware
+func (siw *ServerInterfaceWrapper) CreateParty(c *gin.Context) {
+
+	c.Set(string(BearerAuthScopes), []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateParty(c)
+}
+
+// GetParty operation middleware
+func (siw *ServerInterfaceWrapper) GetParty(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "partyId" -------------
+	var partyId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "partyId", c.Param("partyId"), &partyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter partyId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(string(BearerAuthScopes), []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetParty(c, partyId)
 }
 
 // PostSpotifyToken operation middleware
@@ -210,6 +299,8 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	}
 
 	router.GET(options.BaseURL+"/api/me", wrapper.GetMe)
+	router.POST(options.BaseURL+"/api/parties", wrapper.CreateParty)
+	router.GET(options.BaseURL+"/api/parties/:partyId", wrapper.GetParty)
 	router.POST(options.BaseURL+"/api/spotify/token", wrapper.PostSpotifyToken)
 	router.GET(options.BaseURL+"/healthz", wrapper.GetHealth)
 }
@@ -245,6 +336,120 @@ func (response GetMe401JSONResponse) VisitGetMeResponse(w http.ResponseWriter) e
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePartyRequestObject struct {
+	Body *CreatePartyJSONRequestBody
+}
+
+type CreatePartyResponseObject interface {
+	VisitCreatePartyResponse(w http.ResponseWriter) error
+}
+
+type CreateParty201JSONResponse Party
+
+func (response CreateParty201JSONResponse) VisitCreatePartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateParty400JSONResponse ErrorResponse
+
+func (response CreateParty400JSONResponse) VisitCreatePartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateParty401JSONResponse ErrorResponse
+
+func (response CreateParty401JSONResponse) VisitCreatePartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateParty500JSONResponse ErrorResponse
+
+func (response CreateParty500JSONResponse) VisitCreatePartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPartyRequestObject struct {
+	PartyId string `json:"partyId"`
+}
+
+type GetPartyResponseObject interface {
+	VisitGetPartyResponse(w http.ResponseWriter) error
+}
+
+type GetParty200JSONResponse Party
+
+func (response GetParty200JSONResponse) VisitGetPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetParty404JSONResponse ErrorResponse
+
+func (response GetParty404JSONResponse) VisitGetPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetParty500JSONResponse ErrorResponse
+
+func (response GetParty500JSONResponse) VisitGetPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -367,6 +572,12 @@ type StrictServerInterface interface {
 	// Return the authenticated user's identity claims
 	// (GET /api/me)
 	GetMe(ctx context.Context, request GetMeRequestObject) (GetMeResponseObject, error)
+	// Create a new party
+	// (POST /api/parties)
+	CreateParty(ctx context.Context, request CreatePartyRequestObject) (CreatePartyResponseObject, error)
+	// Get party metadata by short code
+	// (GET /api/parties/{partyId})
+	GetParty(ctx context.Context, request GetPartyRequestObject) (GetPartyResponseObject, error)
 	// Exchange a Spotify authorization code for an access token
 	// (POST /api/spotify/token)
 	PostSpotifyToken(ctx context.Context, request PostSpotifyTokenRequestObject) (PostSpotifyTokenResponseObject, error)
@@ -456,6 +667,63 @@ func (sh *strictHandler) GetMe(ctx *gin.Context) {
 	}
 }
 
+// CreateParty operation middleware
+func (sh *strictHandler) CreateParty(ctx *gin.Context) {
+	var request CreatePartyRequestObject
+
+	var body CreatePartyJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateParty(ctx, request.(CreatePartyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateParty")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(CreatePartyResponseObject); ok {
+		if err := validResponse.VisitCreatePartyResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetParty operation middleware
+func (sh *strictHandler) GetParty(ctx *gin.Context, partyId string) {
+	var request GetPartyRequestObject
+
+	request.PartyId = partyId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetParty(ctx, request.(GetPartyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetParty")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetPartyResponseObject); ok {
+		if err := validResponse.VisitGetPartyResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // PostSpotifyToken operation middleware
 func (sh *strictHandler) PostSpotifyToken(ctx *gin.Context) {
 	var request PostSpotifyTokenRequestObject
@@ -516,29 +784,38 @@ func (sh *strictHandler) GetHealth(ctx *gin.Context) {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
+	"dN2wuln9JwAA//8=",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,
