@@ -1,10 +1,10 @@
 import { Avatar, Button, Spinner } from '@heroui/react'
 
 import type { Playback } from '@/entities/party'
-import type { Image } from '@/shared/model'
 
 import type { Track, TrackReference, Metadata } from '../model/types'
 import { formatArtists, voteStatusLabel } from '../lib/labels'
+import { pickCoverUrl } from '../lib/cover'
 
 // -------------------------------------------------------------------------
 // Props
@@ -69,19 +69,6 @@ export type PartyTrackRowProps = {
 }
 
 // -------------------------------------------------------------------------
-// Helpers
-// -------------------------------------------------------------------------
-
-/** Pick the best image URL for a fixed rendered size of 54 px. */
-function pickCoverUrl(images: Image[]): string | undefined {
-  if (images.length === 0) return undefined
-  // Provider orders largest first; find the smallest image >= 54px or fall
-  // back to the last (smallest) if none qualifies.
-  const best = [...images].reverse().find((img) => img.width >= 54)
-  return (best ?? images[images.length - 1]).url
-}
-
-// -------------------------------------------------------------------------
 // Component
 // -------------------------------------------------------------------------
 
@@ -114,7 +101,7 @@ export function PartyTrackRow({
   const statusLabel = voteStatusLabel({ track, currentTrack, playback })
 
   const title = metadata?.title ?? 'Loading...'
-  const coverUrl = metadata ? pickCoverUrl(metadata.coverImages) : undefined
+  const coverUrl = metadata ? pickCoverUrl(metadata.coverImages, 54) : undefined
 
   // Vote button icon state (spec section 3 trailing-actions)
   const showFilledHeart = hasVoted

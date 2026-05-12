@@ -1,7 +1,6 @@
 import { Avatar, Button, Spinner } from '@heroui/react'
 import type { Metadata, TrackReference } from '@/entities/track'
-import { formatArtists } from '@/entities/track'
-import type { Image } from '@/shared/model'
+import { formatArtists, pickCoverUrl } from '@/entities/track'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -23,17 +22,6 @@ export type SearchResultRowProps = {
 }
 
 // ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Pick the best image URL for a fixed rendered size of 54 px. */
-function pickCoverUrl(images: Image[]): string | undefined {
-  if (images.length === 0) return undefined
-  const best = [...images].reverse().find((img) => img.width >= 54)
-  return (best ?? images[images.length - 1]).url
-}
-
-// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -47,7 +35,7 @@ export function SearchResultRow({
 }: SearchResultRowProps) {
   const title = metadata?.title ?? null
   const artistString = formatArtists(metadata)
-  const coverUrl = metadata ? pickCoverUrl(metadata.coverImages) : undefined
+  const coverUrl = metadata ? pickCoverUrl(metadata.coverImages, 54) : undefined
 
   const displayTitle = title ?? 'Loading track'
   const displayArtist = artistString ?? ''
