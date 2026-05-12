@@ -43,6 +43,43 @@ clean-room workflow described in `docs/translation-workflow.md`.
   - **9b.2 (DONE)**: `apps/api/internal/spotify/` package (HTTP client + `ExchangeCode` + internal `RefreshAccessToken` helper; retries once on 5xx with 500ms fixed pause; 4xx not retried; sentinel errors `ErrSpotifyBadRequest` / `ErrSpotifyUnavailable`) + Handler A (`POST /api/spotify/token`, JWT-gated under `/api`) + sqlc-generated queries from `apps/api/internal/db/queries/spotify_credentials.sql` (Upsert, GetByUserID, DeleteByUserID) + OpenAPI entry with `bearerAuth` + 4 Spotify env vars wired into `config.go` and graceful-degraded in `main.go` (`spotify_enabled=false` log when any var missing). 19 new tests (14 spotify package + 5 handler), all passing with `-race`. Spec-fidelity + security review: 12/12 PASS on the threat model (no token values in logs or responses, encrypt-before-write enforced, JWT auth at group level, parameterized SQL via sqlc, retry policy verified). Go reviewer cleared after two minor nits applied (`errors.Is` instead of `==` for sentinel comparison; lifted `spotifyTokenBody` calls out of handler closures for goroutine safety).
   - **9c (final)**: `/security-review` of the whole + a Spotify-stubbed integration test before merge.
   - Handler C (catalog client-credential token) deferred until search is needed. Handler D (account linking) likely fully replaced by Better Auth's native OAuth provider linking - evaluate before writing any code.
+- `[i]` `functions/lib/vote-processor.ts` - vote ranking + queue mutation backend. Phase 10 backend wedge. Spec at `docs/specs/vote-processor.spec.md` passed firewall review (zero code fences, ~3,100 words across 9 sections). Spec section 8 names three required tables (`parties`, `queue_tracks`, `user_votes`); all 8 open questions plus extra schema decisions locked by the orchestrator below. Slice plan:
+  - **10a (DONE)**: spec written + firewall verified + open questions resolved.
+  - **10b.1 (NEXT)**: single goose migration `add_parties_queue_tracks_user_votes.sql` creates all three tables in dependency order (parties first, then queue_tracks, then user_votes).
+  - **10b.2**: sqlc queries + Gin handlers (5 endpoints) + OpenAPI updates.
+  - **10c**: `/security-review` of the whole + integration test before merge.
+
+  **Lock-now decisions (orchestrator, before implementer dispatch):**
+  - **Q1 + Q7 (concurrency model)**: synchronous in-handler ranking inside a single Postgres BEGIN/COMMIT at READ COMMITTED isolation. Lock the affected `queue_tracks` row with `SELECT ... FOR UPDATE` before reading topmost and computing new order. Re-read topmost track inside the same transaction (Q7 lock: yes). New-track races (when no row exists yet to lock) are serialized by the `user_votes` PK uniqueness. No application-level retry loop because pessimistic locking blocks. No Postgres NOTIFY / no background worker / no LISTEN - the handler is the trigger.
+  - **Q2 (trigger architecture)**: same as Q1 - synchronous handler. Rejected: NOTIFY+LISTEN, polling, separate worker. Reason: low concurrency expected (dozens of voters per party), immediate vote-response consistency is a UX win, no infrastructure to maintain.
+  - **Q3 (`VOTE_FACTOR` constant)**: store `added_at` and `parties.created_at` as `timestamptz` (matches spotify_credentials convention). Compute the ranking formula in Go: `time_since_ms = added_at.Sub(party.CreatedAt).Milliseconds()`; `order_idx = time_since_ms - vote_count * voteFactor` with `const voteFactor int64 = 1_000_000_000_000`. The `order_idx` column is `bigint`.
+  - **Q4 (sort sentinel)**: `order_idx` is `bigint`. Playing-track sentinel is `const playingSentinel int64 = -9_007_199_254_740_990` (`Number.MIN_SAFE_INTEGER + 1`). Kept JS-compatible for cross-stack debugging.
+  - **Q5 (party LRU cache)**: DEFERRED. No in-process cache; rely on the per-party PK lookup which is a single indexed fetch. Revisit if profiling shows the party-fetch on the vote path is a bottleneck.
+  - **Q6 (loose equality)**: use strict equality (sqlc types are strict). The no-op optimization (skip UPDATE when new `order_idx` equals existing) still applies.
+  - **Q8 (authorization)**: JWT required, NO party-membership table, NO anonymous voting. Any authenticated user can vote on any party they have the short-code URL for (matches Festify's URL-as-membership model). The `allowAnonymousVoting` PartySettings knob is a future enhancement (guest sessions); not part of this port. Vote uniqueness enforced by `user_votes` PK on `(party_id, provider, provider_track_id, user_id)`.
+
+  **Schema lock (orchestrator, beyond the 8 OQs):**
+  - `parties.id` is the URL-facing short code (TEXT, 6-char alphanumeric, server-generated at create time with collision-retry). No separate `short_id` column. API response carries both `id` and `shortId` with the same value (future frontend cleanup to drop `shortId` from the Party type).
+  - `parties.host_user_id` is uuid FK to `neon_auth."user"(id)` ON DELETE CASCADE.
+  - `parties.settings` is `jsonb NOT NULL DEFAULT '{}'::jsonb` for PartySettings (allowAnonymousVoting, tvDisplayText, etc.).
+  - `parties.is_active` is `bool NOT NULL DEFAULT true` to support ended-but-not-deleted parties.
+  - `queue_tracks` composite PK on `(party_id, provider, provider_track_id)`. Reserved word `order` renamed to `order_idx`. NO `is_playing` column - the playing track is identified by `order_idx = playingSentinel` per spec section 5 invariant.
+  - `queue_tracks.vote_count` integer with `CHECK (vote_count >= 0)`. Handler maintains the invariant by deleting (Case 4) rather than allowing negatives.
+  - Index `queue_tracks (party_id, order_idx ASC)` serves both the topmost-track lookup and the full-queue read.
+  - `user_votes` PK on `(party_id, provider, provider_track_id, user_id)`. NO FK to `queue_tracks` (a vote may create the `queue_tracks` row; FK ordering conflict). FK on `party_id` -> `parties(id)` ON DELETE CASCADE; FK on `user_id` -> `neon_auth."user"(id)` ON DELETE CASCADE. Application handler enforces consistency between `user_votes` and `queue_tracks`.
+  - Index `user_votes (party_id, user_id)` for "what has this user voted on in this party?" lookups (used by PartyTrackRow's `hasVoted` derivation in the frontend).
+
+  **Endpoint lock (orchestrator, 5 endpoints for Phase 10b.2):**
+  - `POST /api/parties` - create. Body: `{ name, settings? }`. Host = JWT `sub`. Returns the new party.
+  - `GET /api/parties/:partyId` - read party metadata. Auth: JWT required.
+  - `PUT /api/parties/:partyId/tracks/:provider/:trackId/vote` - cast vote (idempotent). Creates `queue_tracks` row if absent (Case 2). Triggers ranking inside the same transaction.
+  - `DELETE /api/parties/:partyId/tracks/:provider/:trackId/vote` - retract vote (idempotent). Deletes `queue_tracks` row when `vote_count` drops to 0 and the track is not playing and not a fallback (Case 4).
+  - `GET /api/parties/:partyId/tracks` - fetch ordered queue. Auth: JWT required. Returns array sorted by `order_idx ASC`.
+  - All five carry `security: [bearerAuth: []]` in `openapi.yaml`.
+
+  **Translator overrides (orchestrator):**
+  - Spec section 9 proposed `POST /api/parties/{partyId}/tracks` for "add a track without a vote" - REJECTED. Adding == voting in CrowdTune (matches Festify behavior + simplifies the handler surface). The PUT vote endpoint creates the `queue_tracks` row on first vote (spec Case 2).
+  - Spec Q8's "anonymous voting" decisively deferred (see above) - not part of this port.
 
 ## Notes
 
