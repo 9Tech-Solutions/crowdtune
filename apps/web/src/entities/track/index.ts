@@ -6,3 +6,5 @@ export { fanartLoadCandidates, metadataLoadCandidates } from './lib/load-candida
 export { pickCoverUrl } from './lib/cover'
 export { PartyTrackRow } from './ui/PartyTrackRow'
 export type { PartyTrackRowProps } from './ui/PartyTrackRow'
+export { TvTrackCard } from './ui/TvTrackCard'
+export type { TvTrackCardProps } from './ui/TvTrackCard'
