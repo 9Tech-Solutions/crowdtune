@@ -62,7 +62,10 @@ func main() {
 		os.Exit(1)
 	default:
 		api := router.Group("/api")
-		handlers.RegisterMe(api, jwks, cfg.Issuer, cfg.Audience)
+		// Mount auth at the group level so every /api/* route is bearer-JWT
+		// protected. Handlers must NOT re-attach RequireUser per-route.
+		api.Use(auth.RequireUser(jwks, cfg.Issuer, cfg.Audience))
+		handlers.RegisterMe(api)
 		// Do not log issuer / audience values: the issuer URL is single-tenant and
 		// identifies the Neon project. Booleans are sufficient for ops.
 		logger.Info("auth middleware live",
