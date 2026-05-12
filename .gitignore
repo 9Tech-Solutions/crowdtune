@@ -82,6 +82,8 @@ desktop.ini
 logs/
 
 # --- Generated artifacts ---
+# Note: apps/api/internal/oapi/*.gen.go is COMMITTED (matches sqlc policy).
+# CI does not run code generators, so the committed file is the source of
+# truth that `go mod tidy` uses to keep direct deps anchored.
 apps/web/src/api/types.ts
 apps/web/src/routeTree.gen.ts
-apps/api/internal/oapi/*.gen.go

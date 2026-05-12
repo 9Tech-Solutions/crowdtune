@@ -6,8 +6,10 @@ tmp/
 .air.tmp
 .env
 coverage.out
-internal/oapi/*.gen.go
-# sqlc-generated code is committed (see internal/db/sqlc/). Run `sqlc generate`
-# after editing internal/db/queries/ and commit the diff. CI does not run sqlc.
+# Generated code is committed (both sqlc and oapi-codegen output). Run
+# `make generate` (which calls sqlc generate + oapi-codegen) after editing
+# internal/db/queries/ or openapi.yaml and commit the diff. CI does not run
+# either generator, so the committed files are the source of truth that
+# `go mod tidy` consults to keep direct deps anchored.
 coverage.txt
 coverage.out
