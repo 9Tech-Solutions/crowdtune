@@ -3,9 +3,10 @@ import { useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { Card, Input, Button, Text, Spinner } from '@heroui/react'
 import { getSession } from '@/shared/auth'
+import type { SessionUser } from '@/shared/auth'
 import { useJoinParty } from '../model/use-join-party'
 import { useCreateParty } from '../model/use-create-party'
-import { useSpotifyStatusPlaceholder } from '../model/use-spotify-status-placeholder'
+import { useSpotifyStatus } from '../model/use-spotify-status'
 import { usePlaybackCompatible } from '@/shared/lib/use-playback-compatible'
 
 // ---------------------------------------------------------------------------
@@ -143,7 +144,6 @@ export function HomePage() {
   const [createError, setCreateError] = useState<string | null>(null)
 
   const isPlaybackCompatible = usePlaybackCompatible()
-  const { isPremium } = useSpotifyStatusPlaceholder()
 
   const joinMutation = useJoinParty()
   const createMutation = useCreateParty()
@@ -210,6 +210,12 @@ export function HomePage() {
     : sessionQuery.data
       ? 'authenticated'
       : 'unauthenticated'
+
+  // userId derived from the session already loaded above — no second fetch.
+  const userId = (sessionQuery.data as SessionUser | null | undefined)?.id
+  const { data: spotifyData } = useSpotifyStatus(userId)
+  // silent fallback; toast system pending
+  const { isPremium } = spotifyData ?? { isPremium: false }
 
   const lowerButtonState = deriveLowerButtonState(
     authState,

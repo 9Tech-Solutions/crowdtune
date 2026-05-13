@@ -1,4 +1,6 @@
 /**
+ * @deprecated Replaced by `useSpotifyStatus`. Pending cleanup follow-up.
+ *
  * Placeholder Spotify status hook for the first port.
  *
  * Always returns `{ isConnected: false, isPremium: false }` because

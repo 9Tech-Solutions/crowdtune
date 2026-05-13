@@ -23,10 +23,11 @@ vi.mock('../model/use-create-party', () => ({
   useCreateParty: vi.fn(),
 }))
 
-vi.mock('../model/use-spotify-status-placeholder', () => ({
-  useSpotifyStatusPlaceholder: vi.fn(() => ({
-    isConnected: false,
-    isPremium: false,
+vi.mock('../model/use-spotify-status', () => ({
+  useSpotifyStatus: vi.fn(() => ({
+    data: { isConnected: false, isPremium: false },
+    isLoading: false,
+    error: null,
   })),
 }))
 
@@ -46,7 +47,7 @@ vi.mock('@/shared/auth', () => ({
 
 import { useJoinParty } from '../model/use-join-party'
 import { useCreateParty } from '../model/use-create-party'
-import { useSpotifyStatusPlaceholder } from '../model/use-spotify-status-placeholder'
+import { useSpotifyStatus } from '../model/use-spotify-status'
 import { usePlaybackCompatible } from '@/shared/lib/use-playback-compatible'
 import { getSession } from '@/shared/auth'
 import type { JoinPartyResult } from '../model/use-join-party'
@@ -54,7 +55,7 @@ import type { CreatePartyResult } from '../model/use-create-party'
 
 const mockUseJoinParty = vi.mocked(useJoinParty)
 const mockUseCreateParty = vi.mocked(useCreateParty)
-const mockUseSpotifyStatus = vi.mocked(useSpotifyStatusPlaceholder)
+const mockUseSpotifyStatus = vi.mocked(useSpotifyStatus)
 const mockUsePlaybackCompatible = vi.mocked(usePlaybackCompatible)
 const mockGetSession = vi.mocked(getSession)
 
@@ -117,7 +118,7 @@ beforeEach(() => {
   mockNavigate.mockReset()
   mockUseJoinParty.mockReturnValue(makeJoinMutation({}))
   mockUseCreateParty.mockReturnValue(makeCreateMutation({}))
-  mockUseSpotifyStatus.mockReturnValue({ isConnected: false, isPremium: false })
+  mockUseSpotifyStatus.mockReturnValue({ data: { isConnected: false, isPremium: false }, isLoading: false, error: null })
   mockUsePlaybackCompatible.mockReturnValue(false)
   // Default: unauthenticated session. Tests that want the authenticated
   // or pending paths override this in the test body.
@@ -290,7 +291,7 @@ describe('lower button: not authenticated', () => {
   it('shows Sign in to create Party and navigates to /auth/$ on press', async () => {
     const user = userEvent.setup()
     mockUsePlaybackCompatible.mockReturnValue(true)
-    mockUseSpotifyStatus.mockReturnValue({ isConnected: false, isPremium: false })
+    mockUseSpotifyStatus.mockReturnValue({ data: { isConnected: false, isPremium: false }, isLoading: false, error: null })
     mockGetSession.mockResolvedValue(null)
     renderPage()
     const btn = await screen.findByRole('button', { name: /sign in to create party/i })
@@ -313,7 +314,7 @@ describe('lower button: not authenticated', () => {
 describe('lower button: connect-spotify', () => {
   it('shows Connect Spotify when authenticated but Spotify not Premium', async () => {
     mockUsePlaybackCompatible.mockReturnValue(true)
-    mockUseSpotifyStatus.mockReturnValue({ isConnected: false, isPremium: false })
+    mockUseSpotifyStatus.mockReturnValue({ data: { isConnected: false, isPremium: false }, isLoading: false, error: null })
     mockGetSession.mockResolvedValue({
       id: 'u1',
       name: 'Alice',
@@ -350,7 +351,7 @@ describe('lower button: auth unknown (checking)', () => {
 describe('lower button: authenticated + premium', () => {
   it('shows Create Party when authenticated and Spotify Premium is confirmed', async () => {
     mockUsePlaybackCompatible.mockReturnValue(true)
-    mockUseSpotifyStatus.mockReturnValue({ isConnected: true, isPremium: true })
+    mockUseSpotifyStatus.mockReturnValue({ data: { isConnected: true, isPremium: true }, isLoading: false, error: null })
     mockGetSession.mockResolvedValue({
       id: 'u1',
       name: 'Alice',
