@@ -19,6 +19,14 @@ import (
 const voteFactor int64 = 1_000_000_000_000
 const playingSentinel int64 = -9_007_199_254_740_990
 
+// maxVoteTxRetries bounds the retry-on-23505 loop around the vote transaction.
+// The partial unique index "one playing track per party" can fail an INSERT
+// from a concurrent first-vote-on-empty-queue race; on conflict the handler
+// re-runs the whole tx, which will now observe the existing playing track
+// via GetTopmostTrack and route through the normal formula. 3 attempts is
+// enough to converge under realistic contention; beyond that, surface 500.
+const maxVoteTxRetries = 3
+
 // errPartyNotFoundInTx is a sentinel returned from inside InTx when the party
 // has been deleted between the fast-fail check and the transaction body.
 var errPartyNotFoundInTx = errors.New("party_not_found_in_tx")
@@ -132,9 +140,68 @@ func (h *votesHandler) applyVote(c *gin.Context, delta int) {
 		return
 	}
 
+	// Retry the whole transaction on 23505 from the partial unique index
+	// guarding "one playing track per party". A concurrent first-vote
+	// transaction may have inserted a playing-sentinel row between our
+	// GetTopmostTrack read and our INSERT; the retry sees the now-existing
+	// playing track and routes the new vote through the formula branch.
 	var outcome voteOutcome
+	var txErr error
+	for attempt := 0; attempt < maxVoteTxRetries; attempt++ {
+		outcome, txErr = h.attemptVote(ctx, partyID, provider, providerTrackID, userID, delta)
+		if txErr == nil || !isUniqueViolation(txErr) {
+			break
+		}
+	}
 
-	txErr := h.store.InTx(ctx, func(ops VoteOps) error {
+	if txErr != nil {
+		if errors.Is(txErr, errPartyNotFoundInTx) {
+			slog.Info("apply_vote", "user_id", userID, "party_id", partyID,
+				"provider", provider, "track_id", providerTrackID,
+				"delta", delta, "outcome", "not_found")
+			c.JSON(http.StatusNotFound, gin.H{
+				"code":    "party_not_found",
+				"message": "party not found",
+			})
+			return
+		}
+		slog.Info("apply_vote", "user_id", userID, "party_id", partyID,
+			"provider", provider, "track_id", providerTrackID,
+			"delta", delta, "outcome", "db_error")
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    "internal_error",
+			"message": "failed to apply vote; please try again",
+		})
+		return
+	}
+
+	if outcome.isNoOp || outcome.track == nil {
+		slog.Info("apply_vote", "user_id", userID, "party_id", partyID,
+			"provider", provider, "track_id", providerTrackID,
+			"delta", delta, "outcome", "no_op")
+		c.Status(http.StatusNoContent)
+		return
+	}
+
+	slog.Info("apply_vote", "user_id", userID, "party_id", partyID,
+		"provider", provider, "track_id", providerTrackID,
+		"delta", delta, "outcome", "ok",
+		"vote_count", outcome.track.VoteCount,
+		"order_idx", outcome.track.OrderIdx)
+	c.JSON(http.StatusOK, toQueueTrackResponse(*outcome.track))
+}
+
+// attemptVote runs one transaction worth of the vote algorithm. Returns the
+// outcome on success or a zero-value outcome plus the transaction error on
+// failure. Idempotent in isolation; the caller retries on isUniqueViolation
+// from the "one playing track per party" partial unique index.
+func (h *votesHandler) attemptVote(
+	ctx context.Context,
+	partyID, provider, providerTrackID, userID string,
+	delta int,
+) (voteOutcome, error) {
+	var outcome voteOutcome
+	err := h.store.InTx(ctx, func(ops VoteOps) error {
 		// Authoritative party check inside the transaction.
 		party, err := ops.GetParty(ctx, partyID)
 		if err != nil {
@@ -268,42 +335,10 @@ func (h *votesHandler) applyVote(c *gin.Context, delta int) {
 		}
 		return nil
 	})
-
-	if txErr != nil {
-		if errors.Is(txErr, errPartyNotFoundInTx) {
-			slog.Info("apply_vote", "user_id", userID, "party_id", partyID,
-				"provider", provider, "track_id", providerTrackID,
-				"delta", delta, "outcome", "not_found")
-			c.JSON(http.StatusNotFound, gin.H{
-				"code":    "party_not_found",
-				"message": "party not found",
-			})
-			return
-		}
-		slog.Info("apply_vote", "user_id", userID, "party_id", partyID,
-			"provider", provider, "track_id", providerTrackID,
-			"delta", delta, "outcome", "db_error")
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    "internal_error",
-			"message": "failed to apply vote; please try again",
-		})
-		return
+	if err != nil {
+		return voteOutcome{}, err
 	}
-
-	if outcome.isNoOp || outcome.track == nil {
-		slog.Info("apply_vote", "user_id", userID, "party_id", partyID,
-			"provider", provider, "track_id", providerTrackID,
-			"delta", delta, "outcome", "no_op")
-		c.Status(http.StatusNoContent)
-		return
-	}
-
-	slog.Info("apply_vote", "user_id", userID, "party_id", partyID,
-		"provider", provider, "track_id", providerTrackID,
-		"delta", delta, "outcome", "ok",
-		"vote_count", outcome.track.VoteCount,
-		"order_idx", outcome.track.OrderIdx)
-	c.JSON(http.StatusOK, toQueueTrackResponse(*outcome.track))
+	return outcome, nil
 }
 
 // toQueueTrackResponse converts a single sqlc.QueueTrack to the JSON response shape.

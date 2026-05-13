@@ -12,6 +12,7 @@ import (
 	"github.com/9Tech-Solutions/crowdtune/apps/api/internal/db/sqlc"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -38,9 +39,11 @@ type fakeVotesStore struct {
 
 	// error knobs
 	getPartyErr  error
-	applyErr     error // returned by InTx itself, bypassing fn
-	updateCalled bool  // sentinel to detect UpdateQueueTrack calls
-	deleteCalled bool  // sentinel to detect DeleteQueueTrack calls
+	applyErr     error   // returned by InTx itself, bypassing fn (persistent: applies on every call)
+	intxErrQueue []error // returned by successive InTx calls, in order; nil entries pass through to fn (used to drive retry tests)
+	intxCalls    int     // total InTx invocations (test introspection for retry behavior)
+	updateCalled bool    // sentinel to detect UpdateQueueTrack calls
+	deleteCalled bool    // sentinel to detect DeleteQueueTrack calls
 }
 
 func newFakeVotesStore() *fakeVotesStore {
@@ -84,8 +87,18 @@ func (f *fakeVotesStore) GetParty(ctx context.Context, id string) (sqlc.Party, e
 }
 
 func (f *fakeVotesStore) InTx(ctx context.Context, fn func(ops VoteOps) error) error {
-	if f.applyErr != nil {
-		return f.applyErr
+	f.mu.Lock()
+	f.intxCalls++
+	var injected error
+	if len(f.intxErrQueue) > 0 {
+		injected = f.intxErrQueue[0]
+		f.intxErrQueue = f.intxErrQueue[1:]
+	} else {
+		injected = f.applyErr
+	}
+	f.mu.Unlock()
+	if injected != nil {
+		return injected
 	}
 	return fn(f)
 }
@@ -546,4 +559,63 @@ func TestRetractVote_TxErrorReturns500(t *testing.T) {
 
 	require.Equal(t, http.StatusInternalServerError, w.Code)
 	assert.Contains(t, w.Body.String(), "internal_error")
+}
+
+// pgUniqueViolation constructs the 23505 SQLSTATE error that the partial
+// unique index "one playing track per party" raises under the TOCTOU race.
+func pgUniqueViolation() error {
+	return &pgconn.PgError{Code: pgErrUniqueViolation}
+}
+
+// Test 15: PUT with one 23505 on the first attempt - retry succeeds.
+// Verifies the handler observes the conflict, re-enters InTx, and the second
+// attempt sees the (now-seeded) playing track so the new vote routes through
+// Case 2 with the formula branch.
+func TestCastVote_RetriesOn23505(t *testing.T) {
+	store := newFakeVotesStore()
+	store.seedParty(testPartyID, partyCreatedAt)
+	// First InTx returns 23505 (simulating the partial-unique-index conflict);
+	// second InTx falls through to fn and runs the real algorithm.
+	store.intxErrQueue = []error{pgUniqueViolation()}
+
+	r := setupVoteRouter(store)
+	w := doPUT(r, testPartyID, testProvider, testProviderTrackID)
+
+	require.Equal(t, http.StatusOK, w.Code, "body=%s", w.Body.String())
+	assert.Equal(t, 2, store.intxCalls, "handler must have retried exactly once after the 23505")
+}
+
+// Test 16: PUT with 23505 on every attempt - retries exhaust, 500 returned.
+// Verifies the loop is bounded and the response does not leak the SQLSTATE.
+func TestCastVote_RetriesExhaustReturns500(t *testing.T) {
+	store := newFakeVotesStore()
+	store.seedParty(testPartyID, partyCreatedAt)
+	store.intxErrQueue = []error{
+		pgUniqueViolation(),
+		pgUniqueViolation(),
+		pgUniqueViolation(),
+	}
+
+	r := setupVoteRouter(store)
+	w := doPUT(r, testPartyID, testProvider, testProviderTrackID)
+
+	require.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Contains(t, w.Body.String(), "internal_error")
+	assert.NotContains(t, w.Body.String(), "23505", "SQLSTATE must not leak in the response body")
+	assert.Equal(t, maxVoteTxRetries, store.intxCalls, "handler should retry exactly maxVoteTxRetries times before giving up")
+}
+
+// Test 17: non-23505 errors (e.g. ordinary DB failures) do NOT trigger retry.
+// Verifies the retry path is narrowly scoped to the unique-violation race and
+// not a generic "try harder" loop for arbitrary DB hiccups.
+func TestCastVote_NonRetryableErrorDoesNotRetry(t *testing.T) {
+	store := newFakeVotesStore()
+	store.seedParty(testPartyID, partyCreatedAt)
+	store.intxErrQueue = []error{errors.New("connection reset by peer")}
+
+	r := setupVoteRouter(store)
+	w := doPUT(r, testPartyID, testProvider, testProviderTrackID)
+
+	require.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, 1, store.intxCalls, "non-23505 errors must not trigger a retry")
 }
