@@ -293,6 +293,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/spotify/status:
+    get:
+      operationId: getSpotifyStatus
+      tags: [spotify]
+      summary: Whether the authenticated user is connected to Spotify
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Connection status for the authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpotifyStatus'
+        '401':
+          description: Bearer token missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/spotify/token:
     post:
       operationId: postSpotifyToken
@@ -466,6 +492,16 @@ components:
         id:
           type: string
           description: Provider-specific track identifier
+    SpotifyStatus:
+      type: object
+      required: [isConnected, isPremium]
+      properties:
+        isConnected:
+          type: boolean
+          description: True iff a Spotify credentials row exists for the user.
+        isPremium:
+          type: boolean
+          description: True iff the user has a Spotify Premium tier subscription. Currently always false; populated in a future slice that calls Spotify's /v1/me on token exchange.
     SpotifyTokenExchangeRequest:
       type: object
       required: [code, redirectUri]

@@ -22,6 +22,7 @@ type Querier interface {
 	GetSpotifyCredentialsByUserID(ctx context.Context, userID string) (SpotifyCredential, error)
 	GetTopmostTrack(ctx context.Context, partyID string) (QueueTrack, error)
 	GetTrackForUpdate(ctx context.Context, arg GetTrackForUpdateParams) (QueueTrack, error)
+	HasSpotifyCredentials(ctx context.Context, userID string) (bool, error)
 	InsertQueueTrack(ctx context.Context, arg InsertQueueTrackParams) (QueueTrack, error)
 	// User vote queries.
 	// Table: user_votes (created by infra/migrations/20260512113057_add_parties_queue_tracks_user_votes.sql)

@@ -150,6 +150,15 @@ type QueueTrack struct {
 	VoteCount int `json:"voteCount"`
 }
 
+// SpotifyStatus defines model for SpotifyStatus.
+type SpotifyStatus struct {
+	// IsConnected True iff a Spotify credentials row exists for the user.
+	IsConnected bool `json:"isConnected"`
+
+	// IsPremium True iff the user has a Spotify Premium tier subscription. Currently always false; populated in a future slice that calls Spotify's /v1/me on token exchange.
+	IsPremium bool `json:"isPremium"`
+}
+
 // SpotifyTokenExchangeRequest defines model for SpotifyTokenExchangeRequest.
 type SpotifyTokenExchangeRequest struct {
 	// Code The one-time Spotify OAuth authorization code from the redirect URL
@@ -209,6 +218,9 @@ type ServerInterface interface {
 	// Cast a vote for a track in the party queue
 	// (PUT /api/parties/{partyId}/tracks/{provider}/{trackId}/vote)
 	CastVote(c *gin.Context, partyId string, provider string, trackId string)
+	// Whether the authenticated user is connected to Spotify
+	// (GET /api/spotify/status)
+	GetSpotifyStatus(c *gin.Context)
 	// Exchange a Spotify authorization code for an access token
 	// (POST /api/spotify/token)
 	PostSpotifyToken(c *gin.Context)
@@ -400,6 +412,21 @@ func (siw *ServerInterfaceWrapper) CastVote(c *gin.Context) {
 	siw.Handler.CastVote(c, partyId, provider, trackId)
 }
 
+// GetSpotifyStatus operation middleware
+func (siw *ServerInterfaceWrapper) GetSpotifyStatus(c *gin.Context) {
+
+	c.Set(string(BearerAuthScopes), []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetSpotifyStatus(c)
+}
+
 // PostSpotifyToken operation middleware
 func (siw *ServerInterfaceWrapper) PostSpotifyToken(c *gin.Context) {
 
@@ -461,6 +488,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/api/parties/:partyId/tracks", wrapper.ListQueueTracks)
 	router.DELETE(options.BaseURL+"/api/parties/:partyId/tracks/:provider/:trackId/vote", wrapper.RetractVote)
 	router.PUT(options.BaseURL+"/api/parties/:partyId/tracks/:provider/:trackId/vote", wrapper.CastVote)
+	router.GET(options.BaseURL+"/api/spotify/status", wrapper.GetSpotifyStatus)
 	router.POST(options.BaseURL+"/api/spotify/token", wrapper.PostSpotifyToken)
 	router.GET(options.BaseURL+"/healthz", wrapper.GetHealth)
 }
@@ -818,6 +846,55 @@ func (response CastVote500JSONResponse) VisitCastVoteResponse(w http.ResponseWri
 	return err
 }
 
+type GetSpotifyStatusRequestObject struct {
+}
+
+type GetSpotifyStatusResponseObject interface {
+	VisitGetSpotifyStatusResponse(w http.ResponseWriter) error
+}
+
+type GetSpotifyStatus200JSONResponse SpotifyStatus
+
+func (response GetSpotifyStatus200JSONResponse) VisitGetSpotifyStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSpotifyStatus401JSONResponse ErrorResponse
+
+func (response GetSpotifyStatus401JSONResponse) VisitGetSpotifyStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSpotifyStatus500JSONResponse ErrorResponse
+
+func (response GetSpotifyStatus500JSONResponse) VisitGetSpotifyStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type PostSpotifyTokenRequestObject struct {
 	Body *PostSpotifyTokenJSONRequestBody
 }
@@ -951,6 +1028,9 @@ type StrictServerInterface interface {
 	// Cast a vote for a track in the party queue
 	// (PUT /api/parties/{partyId}/tracks/{provider}/{trackId}/vote)
 	CastVote(ctx context.Context, request CastVoteRequestObject) (CastVoteResponseObject, error)
+	// Whether the authenticated user is connected to Spotify
+	// (GET /api/spotify/status)
+	GetSpotifyStatus(ctx context.Context, request GetSpotifyStatusRequestObject) (GetSpotifyStatusResponseObject, error)
 	// Exchange a Spotify authorization code for an access token
 	// (POST /api/spotify/token)
 	PostSpotifyToken(ctx context.Context, request PostSpotifyTokenRequestObject) (PostSpotifyTokenResponseObject, error)
@@ -1179,6 +1259,30 @@ func (sh *strictHandler) CastVote(ctx *gin.Context, partyId string, provider str
 	}
 }
 
+// GetSpotifyStatus operation middleware
+func (sh *strictHandler) GetSpotifyStatus(ctx *gin.Context) {
+	var request GetSpotifyStatusRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSpotifyStatus(ctx, request.(GetSpotifyStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSpotifyStatus")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetSpotifyStatusResponseObject); ok {
+		if err := validResponse.VisitGetSpotifyStatusResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // PostSpotifyToken operation middleware
 func (sh *strictHandler) PostSpotifyToken(ctx *gin.Context) {
 	var request PostSpotifyTokenRequestObject
@@ -1239,53 +1343,56 @@ func (sh *strictHandler) GetHealth(ctx *gin.Context) {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

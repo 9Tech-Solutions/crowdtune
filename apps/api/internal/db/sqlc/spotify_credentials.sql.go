@@ -44,6 +44,19 @@ func (q *Queries) GetSpotifyCredentialsByUserID(ctx context.Context, userID stri
 	return i, err
 }
 
+const hasSpotifyCredentials = `-- name: HasSpotifyCredentials :one
+SELECT EXISTS (
+    SELECT 1 FROM spotify_credentials WHERE user_id = $1
+) AS exists
+`
+
+func (q *Queries) HasSpotifyCredentials(ctx context.Context, userID string) (bool, error) {
+	row := q.db.QueryRow(ctx, hasSpotifyCredentials, userID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const upsertSpotifyCredentials = `-- name: UpsertSpotifyCredentials :one
 
 INSERT INTO spotify_credentials (

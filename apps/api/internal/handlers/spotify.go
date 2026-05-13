@@ -19,6 +19,7 @@ import (
 // The interface is satisfied by *sqlc.Queries; tests inject a fake.
 type SpotifyStorer interface {
 	UpsertSpotifyCredentials(ctx context.Context, arg sqlc.UpsertSpotifyCredentialsParams) (sqlc.SpotifyCredential, error)
+	HasSpotifyCredentials(ctx context.Context, userID string) (bool, error)
 }
 
 type spotifyHandler struct {
@@ -26,7 +27,7 @@ type spotifyHandler struct {
 	store  SpotifyStorer
 }
 
-// RegisterSpotify mounts the Spotify token-exchange route on the given group.
+// RegisterSpotify mounts the Spotify routes on the given group.
 // It uses pool to construct the default sqlc.Queries storer.
 func RegisterSpotify(r *gin.RouterGroup, spotifyClient *spotify.Client, pool *pgxpool.Pool) {
 	h := &spotifyHandler{
@@ -34,6 +35,7 @@ func RegisterSpotify(r *gin.RouterGroup, spotifyClient *spotify.Client, pool *pg
 		store:  sqlc.New(pool),
 	}
 	r.POST("/spotify/token", h.exchangeToken)
+	r.GET("/spotify/status", h.getStatus)
 }
 
 // RegisterSpotifyWithStorer is the testable variant that accepts an injected storer.
@@ -43,6 +45,7 @@ func RegisterSpotifyWithStorer(r *gin.RouterGroup, spotifyClient *spotify.Client
 		store:  store,
 	}
 	r.POST("/spotify/token", h.exchangeToken)
+	r.GET("/spotify/status", h.getStatus)
 }
 
 type exchangeTokenRequest struct {
@@ -137,5 +140,33 @@ func (h *spotifyHandler) exchangeToken(c *gin.Context) {
 		AccessToken: creds.AccessToken,
 		ExpiresIn:   creds.ExpiresIn,
 		Scopes:      creds.Scopes,
+	})
+}
+
+type spotifyStatusResponse struct {
+	IsConnected bool `json:"isConnected"`
+	IsPremium   bool `json:"isPremium"`
+}
+
+// getStatus reports whether the authenticated user has a Spotify credentials row.
+// isPremium is hardcoded false in this slice; a follow-up will store and populate
+// the premium flag via the Spotify /v1/me endpoint on token exchange.
+func (h *spotifyHandler) getStatus(c *gin.Context) {
+	userID := auth.UserID(c)
+
+	exists, err := h.store.HasSpotifyCredentials(c.Request.Context(), userID)
+	if err != nil {
+		slog.Error("spotify status", "user_id", userID, "outcome", "db_error", "err", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    "internal_error",
+			"message": "failed to query Spotify status; please try again",
+		})
+		return
+	}
+
+	slog.Info("spotify status", "user_id", userID, "outcome", "ok", "connected", exists)
+	c.JSON(http.StatusOK, spotifyStatusResponse{
+		IsConnected: exists,
+		IsPremium:   false,
 	})
 }

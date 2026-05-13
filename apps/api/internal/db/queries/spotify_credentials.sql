@@ -36,3 +36,8 @@ WHERE user_id = @user_id;
 -- name: DeleteSpotifyCredentialsByUserID :exec
 DELETE FROM spotify_credentials
 WHERE user_id = @user_id;
+
+-- name: HasSpotifyCredentials :one
+SELECT EXISTS (
+    SELECT 1 FROM spotify_credentials WHERE user_id = $1
+) AS exists;

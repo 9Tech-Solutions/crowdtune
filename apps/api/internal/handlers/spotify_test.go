@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -20,7 +21,12 @@ import (
 
 // fakeStorer is an in-memory SpotifyStorer for unit tests.
 type fakeStorer struct {
+	// err is returned by UpsertSpotifyCredentials when non-nil.
 	err error
+	// hasResult is the value HasSpotifyCredentials returns on success.
+	hasResult bool
+	// hasErr is returned by HasSpotifyCredentials when non-nil.
+	hasErr error
 }
 
 func (f *fakeStorer) UpsertSpotifyCredentials(_ context.Context, _ sqlc.UpsertSpotifyCredentialsParams) (sqlc.SpotifyCredential, error) {
@@ -28,11 +34,18 @@ func (f *fakeStorer) UpsertSpotifyCredentials(_ context.Context, _ sqlc.UpsertSp
 		return sqlc.SpotifyCredential{}, f.err
 	}
 	return sqlc.SpotifyCredential{
-		UserID:      "user1",
-		AccessToken: "acc",
-		Scopes:      "user-read-playback-state",
+		UserID:          "user1",
+		AccessToken:     "acc",
+		Scopes:          "user-read-playback-state",
 		LastRefreshedAt: pgtype.Timestamptz{Valid: false},
 	}, nil
+}
+
+func (f *fakeStorer) HasSpotifyCredentials(_ context.Context, _ string) (bool, error) {
+	if f.hasErr != nil {
+		return false, f.hasErr
+	}
+	return f.hasResult, nil
 }
 
 // buildRouter constructs a Gin engine with the Spotify handler wired under
@@ -42,6 +55,7 @@ func buildRouter(t *testing.T, spotifyClient *spotify.Client, store handlers.Spo
 	t.Helper()
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
+	r.HandleMethodNotAllowed = true
 	api := r.Group("/api")
 	// Inject a fake auth claim so auth.UserID(c) returns userID.
 	api.Use(func(c *gin.Context) {
@@ -168,4 +182,65 @@ func TestSpotifyHandler_DBError(t *testing.T) {
 	var resp map[string]any
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Equal(t, "internal_error", resp["code"])
+}
+
+func TestGetStatus_returnsConnectedTrue_whenRowExists(t *testing.T) {
+	_, client := newSpotifyStub(t, http.StatusOK, spotifySuccessBody(t))
+	store := &fakeStorer{hasResult: true}
+	r := buildRouter(t, client, store, "user1")
+
+	w := getJSON(t, r, "/api/spotify/status")
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp map[string]any
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, true, resp["isConnected"])
+	assert.Equal(t, false, resp["isPremium"])
+}
+
+func TestGetStatus_returnsConnectedFalse_whenRowAbsent(t *testing.T) {
+	_, client := newSpotifyStub(t, http.StatusOK, spotifySuccessBody(t))
+	store := &fakeStorer{hasResult: false}
+	r := buildRouter(t, client, store, "user1")
+
+	w := getJSON(t, r, "/api/spotify/status")
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp map[string]any
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, false, resp["isConnected"])
+	assert.Equal(t, false, resp["isPremium"])
+}
+
+func TestGetStatus_returns500_onDbError(t *testing.T) {
+	_, client := newSpotifyStub(t, http.StatusOK, spotifySuccessBody(t))
+	store := &fakeStorer{hasErr: errors.New("boom")}
+	r := buildRouter(t, client, store, "user1")
+
+	w := getJSON(t, r, "/api/spotify/status")
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	var resp map[string]any
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, "internal_error", resp["code"])
+	// raw error string must not be echoed in the response body
+	assert.NotContains(t, w.Body.String(), "boom")
+}
+
+func TestGetStatus_returns405_onPost(t *testing.T) {
+	_, client := newSpotifyStub(t, http.StatusOK, spotifySuccessBody(t))
+	r := buildRouter(t, client, &fakeStorer{}, "user1")
+
+	w := postJSON(t, r, "/api/spotify/status", nil)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+}
+
+func TestGetStatus_returns404_onHyphenPath(t *testing.T) {
+	_, client := newSpotifyStub(t, http.StatusOK, spotifySuccessBody(t))
+	r := buildRouter(t, client, &fakeStorer{}, "user1")
+
+	w := getJSON(t, r, "/api/spotify-status")
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
 }
