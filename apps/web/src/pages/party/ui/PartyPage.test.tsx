@@ -90,16 +90,31 @@ vi.mock('@/widgets/party-queue', () => ({
   PartyQueue: vi.fn(() => <div data-testid="party-queue" />),
 }))
 
+vi.mock('../api/use-party-queue-query', () => ({
+  usePartyQueueQuery: vi.fn(() => ({ tracks: [], isLoading: false, error: null })),
+}))
+
+vi.mock('../api/use-vote', () => ({
+  useVote: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+}))
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 import { usePartyQuery } from '../api/use-party-query'
+import { usePartyQueueQuery } from '../api/use-party-queue-query'
+import { useVote } from '../api/use-vote'
 import { useLocation } from '@tanstack/react-router'
+import { PartyQueue } from '@/widgets/party-queue'
 import type { Party } from '@/entities/party'
+import type { Track } from '@/entities/track'
 
 const mockUsePartyQuery = vi.mocked(usePartyQuery)
+const mockUsePartyQueueQuery = vi.mocked(usePartyQueueQuery)
+const mockUseVote = vi.mocked(useVote)
 const mockUseLocation = vi.mocked(useLocation)
+const mockPartyQueue = vi.mocked(PartyQueue)
 
 function makeParty(overrides: Partial<Party> = {}): Party {
   return {
@@ -147,6 +162,8 @@ async function openSignInModal() {
 beforeEach(() => {
   vi.clearAllMocks()
   mockUsePartyQuery.mockReturnValue({ data: null, isLoading: false, error: null })
+  mockUsePartyQueueQuery.mockReturnValue({ tracks: [], isLoading: false, error: null })
+  mockUseVote.mockReturnValue({ mutate: vi.fn(), isPending: false } as unknown as ReturnType<typeof useVote>)
   mockUseLocation.mockReturnValue({ pathname: '/party/test-party' } as ReturnType<typeof useLocation>)
 })
 
@@ -412,5 +429,70 @@ describe('navigation paths', () => {
     expect(drawer.getAttribute('data-settings-path')).toMatch(/\/party\/test-party\/settings/)
     expect(drawer.getAttribute('data-share-path')).toMatch(/\/party\/test-party\/share/)
     expect(drawer.getAttribute('data-tv-path')).toMatch(/\/party\/test-party\/tv/)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// 15. Queue tracks wired: PartyQueue receives tracks from usePartyQueueQuery
+// ---------------------------------------------------------------------------
+
+function makeTrack(id: string): Track {
+  return {
+    ref: { provider: 'spotify', id },
+    addedAt: '2024-01-01T00:00:00Z',
+    isFallback: false,
+    voteCount: 0,
+    order: 0,
+  }
+}
+
+describe('queue tracks wire-up', () => {
+  it('passes tracks from usePartyQueueQuery to PartyQueue', () => {
+    const fakeTracks: Track[] = [makeTrack('a1'), makeTrack('b2'), makeTrack('c3')]
+    mockUsePartyQueueQuery.mockReturnValue({ tracks: fakeTracks, isLoading: false, error: null })
+    mockUsePartyQuery.mockReturnValue({ data: makeParty(), isLoading: false, error: null })
+    mockUseLocation.mockReturnValue({ pathname: '/party/test-party' } as ReturnType<typeof useLocation>)
+    renderPage()
+
+    // PartyQueue is a vi.fn() mock; inspect the most recent call's props
+    const lastCall = mockPartyQueue.mock.calls.at(-1)
+    expect(lastCall).toBeDefined()
+    const props = lastCall![0]
+    expect(props.tracks).toEqual(fakeTracks)
+  })
+
+  it('passes tracksLoaded=false to PartyQueue while usePartyQueueQuery is loading', () => {
+    mockUsePartyQueueQuery.mockReturnValue({ tracks: [], isLoading: true, error: null })
+    mockUsePartyQuery.mockReturnValue({ data: makeParty(), isLoading: false, error: null })
+    mockUseLocation.mockReturnValue({ pathname: '/party/test-party' } as ReturnType<typeof useLocation>)
+    renderPage()
+
+    const lastCall = mockPartyQueue.mock.calls.at(-1)
+    expect(lastCall).toBeDefined()
+    expect(lastCall![0].tracksLoaded).toBe(false)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// 16. onVote wire-up: castVote mutation is called with the correct arguments
+// ---------------------------------------------------------------------------
+
+describe('onVote wire-up', () => {
+  it('calls useVote mutate with { ref, newVote } when PartyQueue onVote fires', () => {
+    const mutateSpy = vi.fn()
+    mockUseVote.mockReturnValue({ mutate: mutateSpy, isPending: false } as unknown as ReturnType<typeof useVote>)
+    mockUsePartyQuery.mockReturnValue({ data: makeParty(), isLoading: false, error: null })
+    mockUseLocation.mockReturnValue({ pathname: '/party/test-party' } as ReturnType<typeof useLocation>)
+    renderPage()
+
+    // Capture the onVote prop wired into PartyQueue and invoke it directly
+    const lastCall = mockPartyQueue.mock.calls.at(-1)
+    expect(lastCall).toBeDefined()
+    const { onVote } = lastCall![0]
+
+    const ref = { provider: 'spotify' as const, id: 'track-xyz' }
+    onVote(ref, true)
+
+    expect(mutateSpy).toHaveBeenCalledWith({ ref, newVote: true })
   })
 })

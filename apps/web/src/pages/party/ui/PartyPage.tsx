@@ -7,8 +7,11 @@ import { QueueDrawer, QueueNav } from '@/widgets/queue-drawer'
 import { PartyQueue } from '@/widgets/party-queue'
 import { PlaybackProgressBar } from '@/widgets/playback-progress-bar'
 import { getSession, signInWithSocial, type SessionUser } from '@/shared/auth'
+import type { TrackReference } from '@/entities/track'
 import { usePartyQuery } from '../api/use-party-query'
 import { usePlaybackQuery } from '../api/use-playback-query'
+import { usePartyQueueQuery } from '../api/use-party-queue-query'
+import { useVote } from '../api/use-vote'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -72,6 +75,8 @@ export function PartyPage() {
   const { data: party, isLoading: partyLoading, error: partyError } = usePartyQuery(partyId)
   const { data: playback } = usePlaybackQuery(partyId)
   const { user } = useSessionUser()
+  const { tracks, isLoading: tracksLoading } = usePartyQueueQuery(partyId)
+  const { mutate: castVote } = useVote(partyId)
 
   // ---- Derived values -------------------------------------------------------
   const username = user?.name ?? user?.email ?? null
@@ -110,8 +115,14 @@ export function PartyPage() {
     return () => window.removeEventListener('keydown', handleKeydown)
   }, [isSignInModalOpen, isDrawerOpen])
 
+  // ---- Vote handler ---------------------------------------------------------
+  // Fire-and-forget: mutation's onSuccess invalidates the queue cache so the
+  // 3-second refetch picks up the new vote state automatically.
+  const onVote = (ref: TrackReference, newVote: boolean) => {
+    castVote({ ref, newVote })
+  }
+
   // ---- No-op callbacks (feature layer not yet ported) ----------------------
-  const onVote = () => { /* feature layer not yet ported */ }
   const onRemove = () => { /* feature layer not yet ported */ }
   const onTogglePlayback = () => { /* feature layer not yet ported */ }
   const onTransferPlayback = () => { /* feature layer not yet ported */ }
@@ -244,10 +255,10 @@ export function PartyPage() {
           </div>
         ) : currentSubView === 'queue' || currentSubView === null ? (
           <PartyQueue
-            tracksLoaded
+            tracksLoaded={!tracksLoading}
             isOwner={isOwner}
             settingsRoutePath={settingsPath}
-            tracks={[]}
+            tracks={tracks}
             metadata={{}}
             playback={playback}
             votes={{}}
