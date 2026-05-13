@@ -64,29 +64,54 @@ export type PartySettings = {
 /** A live music session that guests join to collectively control playback. */
 export type Party = {
   /**
+   * Primary identifier. Currently the same value as shortId (the 6-char
+   * server-generated short code that appears in URL paths). Kept as a
+   * distinct field so consumers can adopt a separate primary key later
+   * without touching every call site.
+   */
+  id: string
+  /**
    * Human-facing join code (short alphanumeric, server-assigned, unique).
-   * Used in URL paths and typed by guests to join. Not the DB primary key.
+   * Used in URL paths and typed by guests to join.
    */
   shortId: string
   /** Display name chosen by the host. */
   name: string
-  /** ISO 3166-1 alpha-2 country code where the party is hosted. */
-  countryCode: string
   /**
    * ISO 8601 timestamp of when the party was created (UTC, server-authoritative).
    */
   createdAt: string
   /**
-   * Opaque identifier of the user who created the party.
-   * References the auth user record (JWT sub claim, server-authoritative).
+   * ISO 8601 timestamp of the last party-record mutation (UTC).
+   * Bumped by the backend on settings or name changes.
    */
-  createdBy: string
-  /** Live playback state. */
-  playback: Playback
+  updatedAt: string
+  /**
+   * Opaque identifier of the user who hosts the party. Matches the JWT sub
+   * claim of the user who created the party. Used by host-only UI gates.
+   */
+  hostUserId: string
+  /**
+   * Whether the party is live. Ended parties stay in the DB for history but
+   * mutating endpoints reject writes when false.
+   */
+  isActive: boolean
   /**
    * Optional host configuration. When absent, all PartySettings fields take
    * their documented defaults. Consumers must not modify backend state to
    * supply missing defaults.
    */
   settings?: PartySettings
+  /**
+   * Optional ISO 3166-1 alpha-2 country code (Festify legacy field). Not
+   * returned by the current backend; reserved for a future port. Selectors
+   * MUST tolerate absence.
+   */
+  countryCode?: string
+  /**
+   * Optional embedded playback state. Not returned by the current backend
+   * (playback lives in a separate query). Selectors MUST tolerate absence
+   * and return their "no master / no data" branch when this is undefined.
+   */
+  playback?: Playback
 }

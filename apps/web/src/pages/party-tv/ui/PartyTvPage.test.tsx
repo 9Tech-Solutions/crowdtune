@@ -58,11 +58,14 @@ const mockUseNavigate = vi.mocked(useNavigate)
 
 function makeParty(overrides: Partial<Party> = {}): Party {
   return {
+    id: 'TEST',
     shortId: 'TEST',
     name: 'Test Party',
     countryCode: 'US',
     createdAt: '2024-01-01T00:00:00Z',
-    createdBy: 'host-user-id',
+    updatedAt: '2024-01-01T00:00:00Z',
+    hostUserId: 'host-user-id',
+    isActive: true,
     playback: {
       lastChange: '2024-01-01T00:00:00Z',
       lastPositionMs: 0,

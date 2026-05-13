@@ -2,7 +2,7 @@ import type { Party, Playback } from '../model/types'
 
 /**
  * Returns true iff the authenticated user is the host (creator) of the party.
- * Uses strict equality against the JWT sub claim stored in party.createdBy.
+ * Uses strict equality against the JWT sub claim stored in party.hostUserId.
  * Returns false for any null/undefined input - no tri-state, no loading variant.
  */
 export function isHost(
@@ -10,7 +10,7 @@ export function isHost(
   currentUserId: string | null | undefined,
 ): boolean {
   if (!party || !currentUserId) return false
-  return currentUserId === party.createdBy
+  return currentUserId === party.hostUserId
 }
 
 /**

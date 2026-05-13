@@ -76,7 +76,7 @@ export function PartyPage() {
   // ---- Derived values -------------------------------------------------------
   const username = user?.name ?? user?.email ?? null
   const currentUserId = user?.id ?? null
-  const isOwner = party !== null && currentUserId !== null && party.createdBy === currentUserId
+  const isOwner = party !== null && currentUserId !== null && party.hostUserId === currentUserId
 
   // ---- Page-local UI state --------------------------------------------------
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)

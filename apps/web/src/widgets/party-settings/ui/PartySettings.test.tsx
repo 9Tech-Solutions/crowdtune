@@ -104,11 +104,14 @@ function makeSettings(overrides: Partial<PartySettingsType> = {}): PartySettings
 
 function makeParty(overrides: Partial<Party> = {}): Party {
   return {
+    id: 'party-abc',
     shortId: 'party-abc',
     name: 'My Test Party',
     countryCode: 'US',
     createdAt: '2026-01-01T00:00:00Z',
-    createdBy: 'host-user-1',
+    updatedAt: '2026-01-01T00:00:00Z',
+    hostUserId: 'host-user-1',
+    isActive: true,
     playback: {
       lastChange: '2026-01-01T00:00:00Z',
       lastPositionMs: 0,

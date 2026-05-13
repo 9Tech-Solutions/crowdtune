@@ -22,11 +22,14 @@ const BASE_PLAYBACK: Playback = {
 
 function makeParty(overrides: Partial<Party> = {}): Party {
   return {
+    id: 'ABC123',
     shortId: 'ABC123',
     name: 'Test Party',
     countryCode: 'US',
     createdAt: '2024-01-01T00:00:00Z',
-    createdBy: 'user-host-id',
+    updatedAt: '2024-01-01T00:00:00Z',
+    hostUserId: 'user-host-id',
+    isActive: true,
     playback: { ...BASE_PLAYBACK },
     ...overrides,
   }

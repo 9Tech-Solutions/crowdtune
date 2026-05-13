@@ -43,11 +43,14 @@ let currentSessionUserId: string | null = 'host-user-1'
 
 function makeParty(overrides: Partial<Party> = {}): Party {
   return {
+    id: 'abc123',
     shortId: 'abc123',
     name: 'Test Party',
     countryCode: 'US',
     createdAt: '2026-01-01T00:00:00Z',
-    createdBy: 'host-user-1',
+    updatedAt: '2026-01-01T00:00:00Z',
+    hostUserId: 'host-user-1',
+    isActive: true,
     playback: {
       lastChange: '2026-01-01T00:00:00Z',
       lastPositionMs: 0,

@@ -5,7 +5,7 @@
  * shell. Reads partyId from TanStack Router's useParams - no props accepted
  * from the route file.
  *
- * Host-gating: defensive check via party.createdBy === currentUserId. If
+ * Host-gating: defensive check via party.hostUserId === currentUserId. If
  * the check fails, renders an unauthorized message (not a redirect).
  *
  * Web Share: rendered only when navigator.share is available. Rejection
@@ -85,7 +85,7 @@ export function PartyShare() {
   }
 
   // Host-gate check. Non-hosts see a message with no share affordances.
-  const isHostUser = currentUserId !== null && party.createdBy === currentUserId
+  const isHostUser = currentUserId !== null && party.hostUserId === currentUserId
 
   if (!isHostUser) {
     return (

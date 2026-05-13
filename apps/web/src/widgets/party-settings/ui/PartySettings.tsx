@@ -5,7 +5,7 @@
  * page shell. Reads partyId from TanStack Router's useParams - no props
  * accepted from the route file.
  *
- * Host-gating: defensive check via party.createdBy === currentUserId. If
+ * Host-gating: defensive check via party.hostUserId === currentUserId. If
  * the check fails, renders an unauthorized message (not a redirect).
  *
  * Auto-save: toggles fire on flip, text/number inputs fire on blur-when-changed.
@@ -116,7 +116,7 @@ export function PartySettings() {
   // ---------------------------------------------------------------------------
   // Host-gate check
   // ---------------------------------------------------------------------------
-  const isHostUser = currentUserId !== null && party.createdBy === currentUserId
+  const isHostUser = currentUserId !== null && party.hostUserId === currentUserId
 
   if (!isHostUser) {
     return (
