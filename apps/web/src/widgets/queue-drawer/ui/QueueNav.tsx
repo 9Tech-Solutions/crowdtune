@@ -1,5 +1,3 @@
-import { Text } from '@heroui/react'
-
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -130,9 +128,7 @@ function NavLink({ label, icon, href, isActive = false, onClick }: NavLinkProps)
       className={[
         'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors',
         'no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
-        isActive
-          ? 'text-accent font-medium'
-          : 'text-muted hover:text-foreground hover:bg-default',
+        isActive ? 'text-accent font-medium' : 'text-muted hover:text-foreground hover:bg-default',
       ].join(' ')}
       onClick={(e) => {
         e.preventDefault()
@@ -186,7 +182,7 @@ export function QueueNav({
     if (typeof console !== 'undefined') {
       console.warn(
         '[QueueNav] isUserMenuOpen is true but username is null. ' +
-        'The parent must reset isUserMenuOpen to false when username becomes null.',
+          'The parent must reset isUserMenuOpen to false when username becomes null.',
       )
     }
   }
@@ -199,9 +195,7 @@ export function QueueNav({
     <div className="flex flex-col h-full">
       {/* Header: brand wordmark + user identity row */}
       <div className="flex flex-col gap-3 px-4 pt-4">
-        <Text type="h3" weight="bold">
-          CrowdTune
-        </Text>
+        <h3 className="text-2xl font-bold">CrowdTune</h3>
 
         <button
           type="button"
@@ -217,9 +211,7 @@ export function QueueNav({
           ].join(' ')}
           style={{ transition: 'opacity 150ms ease' }}
         >
-          <Text type="body-sm" color="muted" truncate>
-            {username ?? ''}
-          </Text>
+          <span className="text-sm text-muted truncate">{username ?? ''}</span>
           <span
             className={[
               'shrink-0 transition-transform duration-300 ease-in-out motion-reduce:transition-none',
@@ -275,7 +267,9 @@ export function QueueNav({
                 onEnterAdminMode()
               }}
             >
-              <span className="text-muted"><AdminIcon /></span>
+              <span className="text-muted">
+                <AdminIcon />
+              </span>
               Login for Admin Mode
             </a>
           )}
@@ -328,7 +322,9 @@ export function QueueNav({
               onLogout()
             }}
           >
-            <span className="text-muted"><LogoutIcon /></span>
+            <span className="text-muted">
+              <LogoutIcon />
+            </span>
             Logout
           </a>
         </div>

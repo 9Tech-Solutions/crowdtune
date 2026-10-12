@@ -37,7 +37,7 @@ function LoadingPanel() {
       className="fixed inset-0 flex flex-col items-center justify-center gap-6 bg-black"
     >
       <p className="text-7xl font-bold text-white tracking-tight">CrowdTune</p>
-      <Spinner size="xl" color="current" className="text-white" />
+      <Spinner aria-hidden="true" size="xl" color="current" className="text-white" />
       <p className="text-white/70 text-lg">Loading...</p>
     </div>
   )
@@ -151,10 +151,7 @@ function PopulatedLayout({
 
   return (
     // Root: fixed, full-viewport, overflow hidden, no chrome
-    <div
-      className="fixed inset-0 overflow-hidden bg-black"
-      style={{ fontSize: '5.3vh' }}
-    >
+    <div className="fixed inset-0 overflow-hidden bg-black" style={{ fontSize: '5.3vh' }}>
       {/* Background layer */}
       <TvBackground
         backgroundImages={backgroundImages}
@@ -167,19 +164,11 @@ function PopulatedLayout({
         {/* Upper region: ~70vh */}
         <div className="flex-1 flex items-center px-[4vh]">
           {/* Now-playing region */}
-          <section
-            role="region"
-            aria-label="Now playing"
-            className="flex flex-row items-center"
-          >
+          <section role="region" aria-label="Now playing" className="flex flex-row items-center">
             {/* Cover art */}
             <div className="w-[49vh] h-[49vh] shadow-2xl flex-shrink-0">
               {coverUrl ? (
-                <img
-                  src={coverUrl}
-                  alt={trackName}
-                  className="w-full h-full object-cover"
-                />
+                <img src={coverUrl} alt={trackName} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full bg-white/10" role="img" aria-label={trackName} />
               )}
@@ -238,11 +227,7 @@ function PopulatedLayout({
 
       {/* Aria-live region for now-playing transitions (screen reader). */}
       {/* off-screen, polite, only content changes cause announcements */}
-      <div
-        aria-live="polite"
-        aria-atomic="true"
-        className="sr-only"
-      >
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
         {trackName && artistString
           ? `Now playing: ${trackName} by ${artistString}`
           : trackName
@@ -304,10 +289,7 @@ export function PartyTvPage() {
   const nowPlayingMeta = nowPlayingKey ? (metadataByKey[nowPlayingKey] ?? null) : null
 
   // Render state: loading
-  const isLoading =
-    partyLoading ||
-    queueLoading ||
-    (tracks.length > 0 && nowPlayingMeta === null)
+  const isLoading = partyLoading || queueLoading || (tracks.length > 0 && nowPlayingMeta === null)
 
   // Render state: error
   if (partyError) {

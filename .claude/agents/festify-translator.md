@@ -70,4 +70,4 @@ If any of those slip in, rewrite the section in plainer prose and try again.
 
 # Use scaffolding commands rule
 
-When the implementer phase later turns your spec into code, the implementer MUST use scaffolding commands (`pnpm create vite`, `go mod init`, `goose create`, `oapi-codegen`). You don't run those yourself, but write your spec assuming the target stack is bootstrapped via official tooling, not hand-rolled config.
+When the implementer phase later turns your spec into code, the implementer MUST use scaffolding commands (`bunx --package vite-plus vp create`, `go mod init`, `goose create`, `oapi-codegen`). You don't run those yourself, but write your spec assuming the target stack is bootstrapped via official tooling, not hand-rolled config.

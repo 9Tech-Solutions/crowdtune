@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vite-plus/test'
 import { trackIdentityKey, tracksAreEqual } from './identity'
 import type { Track, TrackReference } from '../model/types'
 

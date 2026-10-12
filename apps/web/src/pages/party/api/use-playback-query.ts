@@ -13,7 +13,11 @@ export type UsePlaybackQueryResult = {
  * When the backend lands, only this queryFn changes.
  */
 export function usePlaybackQuery(partyId: string): UsePlaybackQueryResult {
-  const { data = null, isLoading, error } = useQuery<Playback | null, Error>({
+  const {
+    data = null,
+    isLoading,
+    error,
+  } = useQuery<Playback | null, Error>({
     queryKey: ['playback', partyId],
     queryFn: () => Promise.resolve(null),
   })

@@ -18,14 +18,7 @@
  *   stores `!on` back into the field.
  */
 import { useState, useRef } from 'react'
-import {
-  Switch,
-  Label,
-  Description,
-  Input,
-  Button,
-  Modal,
-} from '@heroui/react'
+import { Switch, Label, Description, Input, Button, Modal } from '@heroui/react'
 
 import type { PartySettings } from '@/entities/party'
 
@@ -67,9 +60,7 @@ export function GeneralSettingsPanel({
 }: Props) {
   const [localName, setLocalName] = useState(partyName)
   const [localMaxLength, setLocalMaxLength] = useState<string>(
-    settings.maxTrackLengthMinutes !== null
-      ? String(settings.maxTrackLengthMinutes)
-      : '',
+    settings.maxTrackLengthMinutes !== null ? String(settings.maxTrackLengthMinutes) : '',
   )
   const [localTvText, setLocalTvText] = useState(settings.tvDisplayText ?? '')
   const [nameError, setNameError] = useState('')
@@ -98,9 +89,7 @@ export function GeneralSettingsPanel({
   // ---------------------------------------------------------------------------
   function handleMaxLengthBlur() {
     const prev =
-      settings.maxTrackLengthMinutes !== null
-        ? String(settings.maxTrackLengthMinutes)
-        : ''
+      settings.maxTrackLengthMinutes !== null ? String(settings.maxTrackLengthMinutes) : ''
 
     if (localMaxLength === prev) return
 
@@ -220,9 +209,7 @@ export function GeneralSettingsPanel({
           onChange={(e) => setLocalTvText(e.target.value)}
           onBlur={handleTvTextBlur}
         />
-        <p className="text-xs text-muted">
-          Shown below the progress bar on large displays.
-        </p>
+        <p className="text-xs text-muted">Shown below the progress bar on large displays.</p>
       </div>
 
       {/* Toggles */}
@@ -233,16 +220,16 @@ export function GeneralSettingsPanel({
           aria-label="Keep search open after adding"
           onChange={handleToggleMultipleVotes}
         >
-          <Switch.Control>
-            <Switch.Thumb />
-          </Switch.Control>
           <Switch.Content>
-            <Label className="text-sm">Keep search open after adding</Label>
-            <Description className="text-xs text-muted">
-              When on, guests can add multiple tracks in one search session without
-              reopening the search panel.
-            </Description>
+            <Switch.Control>
+              <Switch.Thumb />
+            </Switch.Control>
+            Keep search open after adding
           </Switch.Content>
+          <Description className="text-xs text-muted">
+            When on, guests can add multiple tracks in one search session without reopening the
+            search panel.
+          </Description>
         </Switch>
 
         <Switch
@@ -251,16 +238,16 @@ export function GeneralSettingsPanel({
           aria-label="Allow explicit tracks"
           onChange={handleToggleExplicit}
         >
-          <Switch.Control>
-            <Switch.Thumb />
-          </Switch.Control>
           <Switch.Content>
-            <Label className="text-sm">Allow explicit tracks</Label>
-            <Description className="text-xs text-muted">
-              When off, guests cannot add tracks flagged as explicit by Spotify. Note:
-              Spotify&apos;s explicit tagging is not 100% reliable.
-            </Description>
+            <Switch.Control>
+              <Switch.Thumb />
+            </Switch.Control>
+            Allow explicit tracks
           </Switch.Content>
+          <Description className="text-xs text-muted">
+            When off, guests cannot add tracks flagged as explicit by Spotify. Note: Spotify&apos;s
+            explicit tagging is not 100% reliable.
+          </Description>
         </Switch>
 
         <Switch
@@ -269,16 +256,15 @@ export function GeneralSettingsPanel({
           aria-label="Require sign-in to vote"
           onChange={handleToggleRequireSignIn}
         >
-          <Switch.Control>
-            <Switch.Thumb />
-          </Switch.Control>
           <Switch.Content>
-            <Label className="text-sm">Require sign-in to vote</Label>
-            <Description className="text-xs text-muted">
-              When on, guests must sign in with a social account before casting votes,
-              reducing spam.
-            </Description>
+            <Switch.Control>
+              <Switch.Thumb />
+            </Switch.Control>
+            Require sign-in to vote
           </Switch.Content>
+          <Description className="text-xs text-muted">
+            When on, guests must sign in with a social account before casting votes, reducing spam.
+          </Description>
         </Switch>
 
         {isSaving && (
@@ -306,17 +292,14 @@ export function GeneralSettingsPanel({
           isDismissable={false}
         >
           <Modal.Container>
-            <Modal.Dialog
-              className="sm:max-w-sm"
-              aria-label="Confirm flush queue"
-            >
+            <Modal.Dialog className="sm:max-w-sm" aria-label="Confirm flush queue">
               <Modal.Header>
                 <Modal.Heading>Flush queue?</Modal.Heading>
               </Modal.Header>
               <Modal.Body>
                 <p className="text-sm text-muted">
-                  This will remove all tracks from the queue except the one currently
-                  playing. This cannot be undone.
+                  This will remove all tracks from the queue except the one currently playing. This
+                  cannot be undone.
                 </p>
               </Modal.Body>
               <Modal.Footer>

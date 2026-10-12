@@ -1,7 +1,7 @@
 import { createRootRoute, Outlet } from '@tanstack/react-router'
 import { NeonAuthProvider } from '@/app/providers'
 
-// eslint-disable-next-line react-refresh/only-export-components
+// oxlint-disable-next-line react-refresh/only-export-components
 function RootLayout() {
   return (
     <NeonAuthProvider>

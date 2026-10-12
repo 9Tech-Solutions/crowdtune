@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vite-plus/test'
 import { formatArtists, voteStatusLabel } from './labels'
 import type { Track, Metadata } from '../model/types'
 import type { Playback } from '@/entities/party'

@@ -26,7 +26,7 @@ import { useParams } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { Spinner } from '@heroui/react'
 
-import type { Party, PartySettings } from '@/entities/party'
+import type { Party, PartySettings as PartySettingsData } from '@/entities/party'
 import { getSession } from '@/shared/auth'
 
 import { DEFAULT_SETTINGS } from '../model/defaults'
@@ -129,12 +129,12 @@ export function PartySettings() {
   // ---------------------------------------------------------------------------
   // Resolved settings (fill defaults when party.settings is absent)
   // ---------------------------------------------------------------------------
-  const settings: PartySettings = party.settings ?? DEFAULT_SETTINGS
+  const settings: PartySettingsData = party.settings ?? DEFAULT_SETTINGS
 
   // ---------------------------------------------------------------------------
   // Save handler
   // ---------------------------------------------------------------------------
-  function handleSave(next: PartySettings) {
+  function handleSave(next: PartySettingsData) {
     updateSettings.mutate(next, {
       onError: () => {
         console.warn('[PartySettings] Could not save settings. Please try again.')
@@ -153,12 +153,7 @@ export function PartySettings() {
   return (
     <div className="flex flex-col lg:flex-row gap-6 p-4">
       {/* Live region for screen reader announcements */}
-      <div
-        aria-live="polite"
-        aria-atomic="true"
-        className="sr-only"
-        id="settings-live-region"
-      />
+      <div aria-live="polite" aria-atomic="true" className="sr-only" id="settings-live-region" />
 
       {/* General Settings panel */}
       <div className="flex-1">
@@ -172,9 +167,7 @@ export function PartySettings() {
           onSaveName={(name) => {
             updateName.mutate(name, {
               onError: () => {
-                console.warn(
-                  '[PartySettings] Could not save party name. Please try again.',
-                )
+                console.warn('[PartySettings] Could not save party name. Please try again.')
               },
             })
           }}
@@ -184,9 +177,7 @@ export function PartySettings() {
                 console.warn('[PartySettings] Queue flushed successfully.')
               },
               onError: () => {
-                console.warn(
-                  '[PartySettings] Could not flush the queue. Please try again.',
-                )
+                console.warn('[PartySettings] Could not flush the queue. Please try again.')
               },
             })
           }}
@@ -209,9 +200,7 @@ export function PartySettings() {
               { playlistRef, shuffle },
               {
                 onError: () => {
-                  console.warn(
-                    '[PartySettings] Could not insert playlist. Please try again.',
-                  )
+                  console.warn('[PartySettings] Could not insert playlist. Please try again.')
                 },
               },
             )

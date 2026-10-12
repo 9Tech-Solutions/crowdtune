@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vite-plus/test'
 import { TestQueryProvider } from '@/shared/test/test-providers'
 import { PartyPage } from './PartyPage'
 
@@ -63,11 +63,7 @@ function NavMockInner({
       data-tv-path={tvPath}
     >
       <span data-testid="drawer-username">{username ?? ''}</span>
-      <button
-        type="button"
-        data-testid="drawer-enter-admin"
-        onClick={onEnterAdminMode}
-      >
+      <button type="button" data-testid="drawer-enter-admin" onClick={onEnterAdminMode}>
         Login for Admin Mode
       </button>
     </nav>
@@ -79,9 +75,8 @@ function NavMockInner({
 // narrow modal QueueDrawer (renders only when isOpen) or the wide-viewport
 // permanent QueueNav (always renders).
 vi.mock('@/widgets/queue-drawer', () => ({
-  QueueDrawer: vi.fn(
-    ({ isOpen, ...rest }: { isOpen: boolean } & NavMockProps) =>
-      isOpen ? <NavMockInner {...rest} /> : null,
+  QueueDrawer: vi.fn(({ isOpen, ...rest }: { isOpen: boolean } & NavMockProps) =>
+    isOpen ? <NavMockInner {...rest} /> : null,
   ),
   QueueNav: vi.fn((props: NavMockProps) => <NavMockInner {...props} />),
 }))
@@ -163,8 +158,12 @@ beforeEach(() => {
   vi.clearAllMocks()
   mockUsePartyQuery.mockReturnValue({ data: null, isLoading: false, error: null })
   mockUsePartyQueueQuery.mockReturnValue({ tracks: [], isLoading: false, error: null })
-  mockUseVote.mockReturnValue({ mutate: vi.fn(), isPending: false } as unknown as ReturnType<typeof useVote>)
-  mockUseLocation.mockReturnValue({ pathname: '/party/test-party' } as ReturnType<typeof useLocation>)
+  mockUseVote.mockReturnValue({ mutate: vi.fn(), isPending: false } as unknown as ReturnType<
+    typeof useVote
+  >)
+  mockUseLocation.mockReturnValue({ pathname: '/party/test-party' } as ReturnType<
+    typeof useLocation
+  >)
 })
 
 // ---------------------------------------------------------------------------
@@ -451,7 +450,9 @@ describe('queue tracks wire-up', () => {
     const fakeTracks: Track[] = [makeTrack('a1'), makeTrack('b2'), makeTrack('c3')]
     mockUsePartyQueueQuery.mockReturnValue({ tracks: fakeTracks, isLoading: false, error: null })
     mockUsePartyQuery.mockReturnValue({ data: makeParty(), isLoading: false, error: null })
-    mockUseLocation.mockReturnValue({ pathname: '/party/test-party' } as ReturnType<typeof useLocation>)
+    mockUseLocation.mockReturnValue({ pathname: '/party/test-party' } as ReturnType<
+      typeof useLocation
+    >)
     renderPage()
 
     // PartyQueue is a vi.fn() mock; inspect the most recent call's props
@@ -464,7 +465,9 @@ describe('queue tracks wire-up', () => {
   it('passes tracksLoaded=false to PartyQueue while usePartyQueueQuery is loading', () => {
     mockUsePartyQueueQuery.mockReturnValue({ tracks: [], isLoading: true, error: null })
     mockUsePartyQuery.mockReturnValue({ data: makeParty(), isLoading: false, error: null })
-    mockUseLocation.mockReturnValue({ pathname: '/party/test-party' } as ReturnType<typeof useLocation>)
+    mockUseLocation.mockReturnValue({ pathname: '/party/test-party' } as ReturnType<
+      typeof useLocation
+    >)
     renderPage()
 
     const lastCall = mockPartyQueue.mock.calls.at(-1)
@@ -480,9 +483,13 @@ describe('queue tracks wire-up', () => {
 describe('onVote wire-up', () => {
   it('calls useVote mutate with { ref, newVote } when PartyQueue onVote fires', () => {
     const mutateSpy = vi.fn()
-    mockUseVote.mockReturnValue({ mutate: mutateSpy, isPending: false } as unknown as ReturnType<typeof useVote>)
+    mockUseVote.mockReturnValue({ mutate: mutateSpy, isPending: false } as unknown as ReturnType<
+      typeof useVote
+    >)
     mockUsePartyQuery.mockReturnValue({ data: makeParty(), isLoading: false, error: null })
-    mockUseLocation.mockReturnValue({ pathname: '/party/test-party' } as ReturnType<typeof useLocation>)
+    mockUseLocation.mockReturnValue({ pathname: '/party/test-party' } as ReturnType<
+      typeof useLocation
+    >)
     renderPage()
 
     // Capture the onVote prop wired into PartyQueue and invoke it directly

@@ -24,7 +24,9 @@ export function QueueDrawer({ isOpen, onClose, ...navProps }: QueueDrawerProps) 
   return (
     <Drawer.Backdrop
       isOpen={isOpen}
-      onOpenChange={(open) => { if (!open) onClose() }}
+      onOpenChange={(open) => {
+        if (!open) onClose()
+      }}
       isDismissable
     >
       <Drawer.Content placement="left" className="max-w-xs w-72">

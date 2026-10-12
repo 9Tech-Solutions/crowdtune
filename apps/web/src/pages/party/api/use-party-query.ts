@@ -28,7 +28,11 @@ export type UsePartyQueryResult = {
  * up host edits (party rename, settings change) on a soft refresh.
  */
 export function usePartyQuery(partyId: string): UsePartyQueryResult {
-  const { data = null, isLoading, error } = useQuery<Party, Error>({
+  const {
+    data = null,
+    isLoading,
+    error,
+  } = useQuery<Party, Error>({
     queryKey: ['party', partyId],
     queryFn: () => api<Party>(`/api/parties/${encodeURIComponent(partyId)}`),
     staleTime: 60_000,

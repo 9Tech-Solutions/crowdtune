@@ -188,7 +188,7 @@ Commit regenerated server stubs in the same diff.
 
 ### Type regeneration
 
-Before the hook is written, run `pnpm --filter web openapi:gen` (or whatever the project's
+Before the hook is written, run `bun run openapi:gen` (or whatever the project's
 script is — see `apps/web/package.json`). This refreshes the OpenAPI-typed schema map so
 `'/api/spotify/status'` resolves to the right response shape.
 
@@ -295,8 +295,8 @@ expand HomePage test coverage in this slice.
 ## 6. Acceptance criteria
 
 - `go test ./...` from `apps/api/` exits 0; new tests appear in coverage.
-- `pnpm --filter web test` exits 0; the hook test file appears in the report.
-- `pnpm --filter web typecheck` exits 0.
+- `bun run test:web` exits 0; the hook test file appears in the report.
+- `bun run typecheck:web` exits 0.
 - `go vet ./...` exits 0.
 - HomePage no longer imports `useSpotifyStatusPlaceholder`.
 - The new `GET /api/spotify/status` route appears in `openapi.yaml` and the regenerated

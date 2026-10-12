@@ -21,7 +21,11 @@ export type UseSpotifyStatusResult = {
  * during an open party session.
  */
 export function useSpotifyStatus(userId: string | undefined): UseSpotifyStatusResult {
-  const { data = null, isLoading, error } = useQuery<SpotifyStatus, Error>({
+  const {
+    data = null,
+    isLoading,
+    error,
+  } = useQuery<SpotifyStatus, Error>({
     queryKey: ['spotifyStatus', userId],
     queryFn: () => api<SpotifyStatus>('/api/spotify/status'),
     enabled: !!userId,

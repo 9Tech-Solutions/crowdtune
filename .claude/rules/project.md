@@ -5,9 +5,9 @@ project rule wins.
 
 ## Stack lock
 
-- **Frontend**: React 19, Vite 8, TypeScript 6, Zustand 5, TanStack Router + Query, Tailwind 4, **HeroUI v3**, Vitest 4.
+- **Frontend**: React 19, Vite+ 1.1, TypeScript 7, Zustand 5, TanStack Router + Query, Tailwind 4, **HeroUI v3**, Vitest 4.
 - **Frontend architecture**: **Feature-Sliced Design (FSD)** - `src/{app, pages, widgets, features, entities, shared}` with imports flowing strictly downward. `src/routes/` is an FSD exception (TanStack file-based routing); each route file is a thin import from `@/pages/<name>`.
-- **Backend**: Go 1.25, Gin, pgx v5, sqlc, goose migrations, slog.
+- **Backend**: Go 1.27, Gin, pgx v5, sqlc, goose migrations, slog.
 - **DB**: Postgres on Neon.
 - **Auth**: Neon Auth (Better-Auth-backed); `@neondatabase/neon-js/auth/react` + `/auth/react/ui` + `/ui/css`.
 - **Contract**: OpenAPI 3.1 in `apps/api/openapi.yaml`, codegen for both server stubs (`oapi-codegen`) and TS

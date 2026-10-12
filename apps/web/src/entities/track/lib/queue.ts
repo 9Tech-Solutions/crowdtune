@@ -20,15 +20,9 @@ type SortedQueueArgs = {
  *  - NaN order → treated as +Infinity (sorted to end).
  *  - Tie-break: addedAt ascending (ISO 8601 UTC strings compare lex-safe).
  */
-export function sortedQueue({
-  tracks,
-  metadata,
-  maxTrackLengthMinutes,
-}: SortedQueueArgs): Track[] {
+export function sortedQueue({ tracks, metadata, maxTrackLengthMinutes }: SortedQueueArgs): Track[] {
   const limitMs =
-    maxTrackLengthMinutes && maxTrackLengthMinutes > 0
-      ? maxTrackLengthMinutes * 60_000
-      : null
+    maxTrackLengthMinutes && maxTrackLengthMinutes > 0 ? maxTrackLengthMinutes * 60_000 : null
 
   const filtered = Object.values(tracks).filter((track) => {
     // Rule 1: complete reference required

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vite-plus/test'
 
 import type { Track, Metadata } from '../model/types'
 import type { Playback } from '@/entities/party'
@@ -130,7 +130,11 @@ describe('zero votes, non-fallback (Pending)', () => {
 
   it('renders the plus icon (not heart) on the vote button', () => {
     const track = makeTrack('t1', { voteCount: 0, isFallback: false })
-    const props = defaultProps({ track, currentTrack: makeTrack('other'), playback: makePlayback(true) })
+    const props = defaultProps({
+      track,
+      currentTrack: makeTrack('other'),
+      playback: makePlayback(true),
+    })
     render(<PartyTrackRow {...props} />)
     // The vote button label says "Vote for Test Track" (no "Unvote")
     const btn = screen.getByRole('button', { name: /vote for Test Track/i })
@@ -145,14 +149,23 @@ describe('zero votes, non-fallback (Pending)', () => {
 describe('zero votes, fallback (Host pick)', () => {
   it('shows "Host pick" in the secondary line', () => {
     const track = makeTrack('t1', { voteCount: 0, isFallback: true })
-    const props = defaultProps({ track, currentTrack: makeTrack('other'), playback: makePlayback(true) })
+    const props = defaultProps({
+      track,
+      currentTrack: makeTrack('other'),
+      playback: makePlayback(true),
+    })
     render(<PartyTrackRow {...props} />)
     expect(screen.getByText(/Host pick/)).toBeInTheDocument()
   })
 
   it('renders an outlined heart (not plus) on the vote button for fallback with no votes', () => {
     const track = makeTrack('t1', { voteCount: 0, isFallback: true })
-    const props = defaultProps({ track, currentTrack: makeTrack('other'), playback: makePlayback(true), hasVoted: false })
+    const props = defaultProps({
+      track,
+      currentTrack: makeTrack('other'),
+      playback: makePlayback(true),
+      hasVoted: false,
+    })
     render(<PartyTrackRow {...props} />)
     // Accessible label uses "Vote for" (not Unvote) - has outline heart
     expect(screen.getByRole('button', { name: /vote for Test Track/i })).toBeInTheDocument()
@@ -166,14 +179,24 @@ describe('zero votes, fallback (Host pick)', () => {
 describe('has votes, user has not voted', () => {
   it('shows vote count in secondary line', () => {
     const track = makeTrack('t1', { voteCount: 2 })
-    const props = defaultProps({ track, currentTrack: makeTrack('other'), playback: makePlayback(true), hasVoted: false })
+    const props = defaultProps({
+      track,
+      currentTrack: makeTrack('other'),
+      playback: makePlayback(true),
+      hasVoted: false,
+    })
     render(<PartyTrackRow {...props} />)
     expect(screen.getByText(/2 votes/)).toBeInTheDocument()
   })
 
   it('vote button label is "Vote for" (outlined heart state)', () => {
     const track = makeTrack('t1', { voteCount: 2 })
-    const props = defaultProps({ track, currentTrack: makeTrack('other'), playback: makePlayback(true), hasVoted: false })
+    const props = defaultProps({
+      track,
+      currentTrack: makeTrack('other'),
+      playback: makePlayback(true),
+      hasVoted: false,
+    })
     render(<PartyTrackRow {...props} />)
     expect(screen.getByRole('button', { name: /vote for Test Track/i })).toBeInTheDocument()
   })
@@ -186,14 +209,24 @@ describe('has votes, user has not voted', () => {
 describe('has votes, user has voted', () => {
   it('shows vote count in secondary line', () => {
     const track = makeTrack('t1', { voteCount: 2 })
-    const props = defaultProps({ track, currentTrack: makeTrack('other'), playback: makePlayback(true), hasVoted: true })
+    const props = defaultProps({
+      track,
+      currentTrack: makeTrack('other'),
+      playback: makePlayback(true),
+      hasVoted: true,
+    })
     render(<PartyTrackRow {...props} />)
     expect(screen.getByText(/2 votes/)).toBeInTheDocument()
   })
 
   it('vote button label is "Unvote" (filled heart state)', () => {
     const track = makeTrack('t1', { voteCount: 2 })
-    const props = defaultProps({ track, currentTrack: makeTrack('other'), playback: makePlayback(true), hasVoted: true })
+    const props = defaultProps({
+      track,
+      currentTrack: makeTrack('other'),
+      playback: makePlayback(true),
+      hasVoted: true,
+    })
     render(<PartyTrackRow {...props} />)
     expect(screen.getByRole('button', { name: /unvote Test Track/i })).toBeInTheDocument()
   })

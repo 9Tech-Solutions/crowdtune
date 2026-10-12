@@ -4,7 +4,7 @@ Gin + pgx + sqlc backend for CrowdTune.
 
 ## Stack
 
-- Go 1.25
+- Go 1.27
 - gin-gonic/gin (HTTP)
 - jackc/pgx/v5 + pgxpool (Postgres driver)
 - sqlc (typed query generation)

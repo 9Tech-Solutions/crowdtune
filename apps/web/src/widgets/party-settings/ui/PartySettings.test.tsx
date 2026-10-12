@@ -8,7 +8,7 @@
  */
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 import type { Party } from '@/entities/party'
@@ -69,9 +69,7 @@ vi.mock('../api/use-host-playlists', () => ({
 }))
 
 vi.mock('@/shared/auth', () => ({
-  getSession: vi.fn(() =>
-    Promise.resolve({ id: 'host-user-1', name: 'Host', email: 'h@ex.com' }),
-  ),
+  getSession: vi.fn(() => Promise.resolve({ id: 'host-user-1', name: 'Host', email: 'h@ex.com' })),
 }))
 
 // Import AFTER mocks are registered
@@ -150,9 +148,7 @@ function renderWidget(party: Party | null = makeParty()) {
 
   client.setQueryData(
     ['session'],
-    currentSessionUserId
-      ? { id: currentSessionUserId, name: 'Host', email: 'h@ex.com' }
-      : null,
+    currentSessionUserId ? { id: currentSessionUserId, name: 'Host', email: 'h@ex.com' } : null,
   )
 
   return render(
@@ -162,9 +158,9 @@ function renderWidget(party: Party | null = makeParty()) {
   )
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// oxlint-disable-next-line @typescript-eslint/no-explicit-any
 type Castable = (...args: any[]) => any
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// oxlint-disable-next-line @typescript-eslint/no-explicit-any
 function setMock<F extends Castable>(fn: F, value: any) {
   vi.mocked(fn).mockReturnValue(value as ReturnType<F>)
 }
@@ -193,11 +189,12 @@ function resetDefaultMocks() {
     isLoading: false,
     isError: false,
   })
-  setMock(getSession, Promise.resolve(
-    currentSessionUserId
-      ? { id: currentSessionUserId, name: 'Host', email: 'h@ex.com' }
-      : null,
-  ))
+  setMock(
+    getSession,
+    Promise.resolve(
+      currentSessionUserId ? { id: currentSessionUserId, name: 'Host', email: 'h@ex.com' } : null,
+    ),
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -217,9 +214,7 @@ describe('host-gating', () => {
 
   it('renders the unauthorized message when user is not the host', () => {
     renderWidget()
-    expect(
-      screen.getByText(/only the party host can access settings/i),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/only the party host can access settings/i)).toBeInTheDocument()
   })
 
   it('does not render the General Settings heading for a non-host', () => {
@@ -260,30 +255,26 @@ describe('initial render', () => {
 
   it('renders all three toggle switches', () => {
     renderWidget()
-    expect(screen.getByRole('switch', { name: /keep search open after adding/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole('switch', { name: /keep search open after adding/i }),
+    ).toBeInTheDocument()
     expect(screen.getByRole('switch', { name: /allow explicit tracks/i })).toBeInTheDocument()
     expect(screen.getByRole('switch', { name: /require sign-in to vote/i })).toBeInTheDocument()
   })
 
   it('reflects allowMultipleVotesPerSearch=true as toggle checked', () => {
     renderWidget(makeParty({ settings: makeSettings({ allowMultipleVotesPerSearch: true }) }))
-    expect(
-      screen.getByRole('switch', { name: /keep search open after adding/i }),
-    ).toBeChecked()
+    expect(screen.getByRole('switch', { name: /keep search open after adding/i })).toBeChecked()
   })
 
   it('reflects allowExplicitTracks=false as toggle unchecked', () => {
     renderWidget(makeParty({ settings: makeSettings({ allowExplicitTracks: false }) }))
-    expect(
-      screen.getByRole('switch', { name: /allow explicit tracks/i }),
-    ).not.toBeChecked()
+    expect(screen.getByRole('switch', { name: /allow explicit tracks/i })).not.toBeChecked()
   })
 
   it('requireSignIn toggle is ON when allowAnonymousVoting=false (inverted polarity)', () => {
     renderWidget(makeParty({ settings: makeSettings({ allowAnonymousVoting: false }) }))
-    expect(
-      screen.getByRole('switch', { name: /require sign-in to vote/i }),
-    ).toBeChecked()
+    expect(screen.getByRole('switch', { name: /require sign-in to vote/i })).toBeChecked()
   })
 })
 
@@ -350,10 +341,7 @@ describe('text field blur', () => {
     const input = screen.getByRole('textbox', { name: /party name/i })
     fireEvent.change(input, { target: { value: 'New Name' } })
     fireEvent.blur(input)
-    expect(mockMutateUpdateName).toHaveBeenCalledWith(
-      'New Name',
-      expect.any(Object),
-    )
+    expect(mockMutateUpdateName).toHaveBeenCalledWith('New Name', expect.any(Object))
   })
 
   it('does NOT call update-party-name when party name blurs empty (validation error)', () => {
@@ -431,11 +419,15 @@ describe('save failure fallback', () => {
   it('calls console.warn when the mutation fires its onError callback', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     // Make mutate immediately call onError
-    vi.mocked(useUpdatePartySettings).mockImplementation(() => ({
-      mutate: ((_: unknown, opts: { onError: () => void }) => opts.onError()) as unknown as ReturnType<typeof useUpdatePartySettings>['mutate'],
-      isPending: false,
-      isError: true,
-    } as unknown as ReturnType<typeof useUpdatePartySettings>))
+    vi.mocked(useUpdatePartySettings).mockImplementation(
+      () =>
+        ({
+          mutate: ((_: unknown, opts: { onError: () => void }) =>
+            opts.onError()) as unknown as ReturnType<typeof useUpdatePartySettings>['mutate'],
+          isPending: false,
+          isError: true,
+        }) as unknown as ReturnType<typeof useUpdatePartySettings>,
+    )
 
     renderWidget(makeParty({ settings: makeSettings({ allowExplicitTracks: true }) }))
     await userEvent.click(screen.getByRole('switch', { name: /allow explicit tracks/i }))
@@ -528,9 +520,7 @@ describe('Spotify connected, no playlists', () => {
         onInsertPlaylist={vi.fn()}
       />,
     )
-    expect(
-      screen.getByText(/no playlists found in your spotify account/i),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/no playlists found in your spotify account/i)).toBeInTheDocument()
   })
 })
 
@@ -546,8 +536,14 @@ describe('playlist filter', () => {
         isSpotifyConnected={true}
         isSpotifyAuthInProgress={false}
         playlists={[
-          makePlaylist({ name: 'Chill Vibes', ref: { id: 'p1', provider: 'spotify', spotifyUserId: 'u' } }),
-          makePlaylist({ name: 'Rock Classics', ref: { id: 'p2', provider: 'spotify', spotifyUserId: 'u' } }),
+          makePlaylist({
+            name: 'Chill Vibes',
+            ref: { id: 'p1', provider: 'spotify', spotifyUserId: 'u' },
+          }),
+          makePlaylist({
+            name: 'Rock Classics',
+            ref: { id: 'p2', provider: 'spotify', spotifyUserId: 'u' },
+          }),
         ]}
         isPlaylistsLoading={false}
         isInsertPending={false}
@@ -568,8 +564,14 @@ describe('playlist filter', () => {
         isSpotifyConnected={true}
         isSpotifyAuthInProgress={false}
         playlists={[
-          makePlaylist({ name: 'Chill Vibes', ref: { id: 'p1', provider: 'spotify', spotifyUserId: 'u' } }),
-          makePlaylist({ name: 'Rock Classics', ref: { id: 'p2', provider: 'spotify', spotifyUserId: 'u' } }),
+          makePlaylist({
+            name: 'Chill Vibes',
+            ref: { id: 'p1', provider: 'spotify', spotifyUserId: 'u' },
+          }),
+          makePlaylist({
+            name: 'Rock Classics',
+            ref: { id: 'p2', provider: 'spotify', spotifyUserId: 'u' },
+          }),
         ]}
         isPlaylistsLoading={false}
         isInsertPending={false}
@@ -670,9 +672,7 @@ describe('accessibility', () => {
 
   it('Flush Queue button has the descriptive aria-label', () => {
     renderWidget()
-    expect(
-      screen.getByRole('button', { name: /flush queue/i }),
-    ).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /flush queue/i })).toHaveAttribute(
       'aria-label',
       'Flush queue - removes all tracks except the currently playing one',
     )
@@ -693,9 +693,10 @@ describe('accessibility', () => {
         onInsertPlaylist={vi.fn()}
       />,
     )
-    expect(
-      screen.getByRole('textbox', { name: /filter playlists/i }),
-    ).toHaveAttribute('aria-label', 'Filter playlists')
+    expect(screen.getByRole('textbox', { name: /filter playlists/i })).toHaveAttribute(
+      'aria-label',
+      'Filter playlists',
+    )
   })
 
   it('Playlist list region has role=region and aria-label="Spotify playlists"', async () => {

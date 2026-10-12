@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation, Outlet } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { Spinner, Button, Modal, Text } from '@heroui/react'
+import { Spinner, Button, Modal } from '@heroui/react'
 
 import { QueueDrawer, QueueNav } from '@/widgets/queue-drawer'
 import { PartyQueue } from '@/widgets/party-queue'
@@ -123,9 +123,15 @@ export function PartyPage() {
   }
 
   // ---- No-op callbacks (feature layer not yet ported) ----------------------
-  const onRemove = () => { /* feature layer not yet ported */ }
-  const onTogglePlayback = () => { /* feature layer not yet ported */ }
-  const onTransferPlayback = () => { /* feature layer not yet ported */ }
+  const onRemove = () => {
+    /* feature layer not yet ported */
+  }
+  const onTogglePlayback = () => {
+    /* feature layer not yet ported */
+  }
+  const onTransferPlayback = () => {
+    /* feature layer not yet ported */
+  }
 
   // ---- Sign-in trigger surface (callable by feature-layer once ported) -----
   function triggerSignIn(mode: SignInMode) {
@@ -167,7 +173,9 @@ export function PartyPage() {
     username,
     onNavigate: handleNavigate,
     onEnterAdminMode: () => triggerSignIn('normal'),
-    onLogout: () => { /* logout not yet ported */ },
+    onLogout: () => {
+      /* logout not yet ported */
+    },
   }
 
   // Short-circuit for TV mode: TvPage fills the viewport with no chrome.
@@ -182,10 +190,8 @@ export function PartyPage() {
     return (
       <main className="min-h-screen flex items-center justify-center px-4">
         <div className="flex flex-col items-center gap-3 text-center">
-          <Text type="h2">Party not found</Text>
-          <Text type="body" color="muted">
-            This party may have ended or the link is no longer valid.
-          </Text>
+          <h2 className="text-3xl font-semibold">Party not found</h2>
+          <p className="text-muted">This party may have ended or the link is no longer valid.</p>
           <Button variant="secondary" onPress={() => navigate({ to: '/' })}>
             Go home
           </Button>
@@ -233,9 +239,7 @@ export function PartyPage() {
             {partyLoading ? (
               <span className="text-muted text-sm">Loading...</span>
             ) : (
-              <Text type="h4" weight="bold">
-                {party?.name ?? ''}
-              </Text>
+              <h4 className="text-xl font-bold">{party?.name ?? ''}</h4>
             )}
           </div>
         </div>
@@ -291,17 +295,15 @@ export function PartyPage() {
           <Modal.Dialog aria-label="Sign in to continue">
             <Modal.Header>
               <Modal.Heading>
-                {signInMode === 'follow-up'
-                  ? 'Further action required'
-                  : 'Please sign in to vote'}
+                {signInMode === 'follow-up' ? 'Further action required' : 'Please sign in to vote'}
               </Modal.Heading>
             </Modal.Header>
             <Modal.Body>
-              <Text type="body-sm" color="muted">
+              <p className="text-sm text-muted">
                 {signInMode === 'follow-up'
                   ? 'Please sign in with one of your previously linked social accounts to continue.'
                   : 'The party host requires guests to sign in before voting.'}
-              </Text>
+              </p>
               <div className="flex flex-col gap-2 mt-4">
                 {ENABLED_PROVIDERS.map((provider) => (
                   <Button
@@ -326,4 +328,3 @@ export function PartyPage() {
     </div>
   )
 }
-

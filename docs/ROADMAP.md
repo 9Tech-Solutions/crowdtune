@@ -11,7 +11,7 @@ Living document. Updated each phase. Source of truth for what is shipped, what i
 | 2 | Repo bootstrap | `9Tech-Solutions/crowdtune` initialized, SUL license, pitch under `docs/pitch/` |
 | 3 | Subagent dev | 4 project-local agents (festify-translator, react-component-author, gin-handler-author, goose-migration-author) + project rules + clean-room workflow doc |
 | 4 | Festify reference clone | `.reference/festify/` populated, gitignore enforced, CI guardrail |
-| 5 | Stack scaffolding | Vite/React 19, Go 1.25/Gin, pgx/sqlc/goose, OpenAPI 3.1, GitHub Actions |
+| 5 | Stack scaffolding | Vite/React 19, Go 1.27/Gin, pgx/sqlc/goose, OpenAPI 3.1, GitHub Actions |
 | 6 | CRG build + codemaps | 9 files / 18 nodes / 100 edges indexed; 5 codemaps under `docs/CODEMAPS/` |
 | 7 | Verification matrix | typecheck / lint / test / build all green; 4 commits pushed to main |
 | - | DB smoke test | Neon Postgres reachable; init migration applied (pgcrypto, citext); `/healthz` returns `db: ok` |
@@ -75,7 +75,7 @@ The frontend gets `VITE_NEON_AUTH_URL` (Vite-exposed). The API gets the issuer +
 
 #### 8c. Frontend - install Neon Auth UI
 
-Use scaffolding command: `pnpm --filter web add @neondatabase/neon-js @neondatabase/auth-ui`.
+Use scaffolding command: `bun add --cwd apps/web @neondatabase/neon-js @neondatabase/auth-ui`.
 
 New files:
 - `apps/web/src/lib/auth-client.ts`: `createAuthClient(import.meta.env.VITE_NEON_AUTH_URL)`
@@ -141,7 +141,7 @@ App tables that own user-scoped rows reference users by `user_id TEXT` (the `sub
 | File | Action |
 |---|---|
 | `.env.example` | add 4 env vars |
-| `apps/web/package.json` | `pnpm add @neondatabase/neon-js @neondatabase/auth-ui` |
+| `apps/web/package.json` | `bun add @neondatabase/neon-js @neondatabase/auth-ui` |
 | `apps/web/src/lib/auth-client.ts` | new |
 | `apps/web/src/providers/NeonAuthProvider.tsx` | new |
 | `apps/web/src/routes/__root.tsx`, `sign-in.tsx`, `sign-up.tsx` | new (introduces TanStack Router file-based routing) |

@@ -1,3 +1,7 @@
+# CrowdTune working instructions
+
+Use Bun for workspace commands and Vite+ for web development, checks, tests, and builds. Read `.claude/rules/project.md` for the project conventions and clean-room translation boundaries. Keep these instructions in this file instead of duplicating them in tool-specific root files.
+
 <!-- code-review-graph MCP tools -->
 ## MCP Tools: code-review-graph
 

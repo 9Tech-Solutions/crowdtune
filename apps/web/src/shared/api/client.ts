@@ -38,11 +38,7 @@ export async function api<T>(path: string, init: RequestInitWithBody = {}): Prom
     } catch {
       // body was not JSON; fall back to status text
     }
-    throw new ApiError(
-      res.status,
-      payload.code ?? 'unknown',
-      payload.message ?? res.statusText,
-    )
+    throw new ApiError(res.status, payload.code ?? 'unknown', payload.message ?? res.statusText)
   }
 
   if (res.status === 204) {

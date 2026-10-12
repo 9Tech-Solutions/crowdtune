@@ -1,6 +1,6 @@
 import { render, screen, act, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vite-plus/test'
 
 import type { Metadata, TrackReference } from '@/entities/track'
 import { TestQueryProvider } from '@/shared/test/test-providers'
@@ -401,11 +401,9 @@ describe('already-queued overlay', () => {
       error: null,
     })
 
-    mockMutate.mockImplementationOnce(
-      (_ref: TrackReference, opts: { onSuccess: () => void }) => {
-        opts.onSuccess()
-      },
-    )
+    mockMutate.mockImplementationOnce((_ref: TrackReference, opts: { onSuccess: () => void }) => {
+      opts.onSuccess()
+    })
 
     renderWidget()
     await userEvent.click(screen.getByRole('button', { name: /Add Queued Song/i }))

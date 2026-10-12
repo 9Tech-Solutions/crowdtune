@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vite-plus/test'
 import { fanartLoadCandidates, metadataLoadCandidates } from './load-candidates'
 import type { Track, Metadata } from '../model/types'
 
@@ -76,7 +76,9 @@ describe('fanartLoadCandidates', () => {
   })
 
   it('returns at most 2 candidates', () => {
-    const tracks = ['a', 'b', 'c'].map((id) => makeTrack(id, { order: ['a', 'b', 'c'].indexOf(id) }))
+    const tracks = ['a', 'b', 'c'].map((id) =>
+      makeTrack(id, { order: ['a', 'b', 'c'].indexOf(id) }),
+    )
     const metadata: Record<string, Metadata> = {
       'spotify-a': makeMetadata(),
       'spotify-b': makeMetadata(),

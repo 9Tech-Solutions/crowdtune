@@ -20,9 +20,7 @@ export type JoinPartyVariables = { partyCode: string }
 export function useJoinParty() {
   return useMutation<JoinPartyResult, Error, JoinPartyVariables>({
     mutationFn: async ({ partyCode }) => {
-      const party = await api<Party>(
-        `/api/parties/${encodeURIComponent(partyCode)}`,
-      )
+      const party = await api<Party>(`/api/parties/${encodeURIComponent(partyCode)}`)
       return { partyId: party.id }
     },
   })

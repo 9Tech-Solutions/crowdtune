@@ -111,12 +111,12 @@ Phase 9 production bundle: 1.19 MB JS / 346 KB gzipped, 32 KB CSS / ~5 KB gzippe
 ## Test pipeline
 
 ```
-src/**/*.test.tsx -> vitest run -> jsdom env -> @testing-library/react
+src/**/*.test.tsx -> vp test run -> jsdom env -> @testing-library/react
 ```
 
 `src/shared/test/setup.ts` registers jest-dom matchers globally.
 
 ## Generated artifacts (gitignored)
 
-- `src/routeTree.gen.ts` - regenerated via `pnpm routes:gen` (or chained inside typecheck/test/build)
-- `src/api/types.ts` (planned) - generated from `apps/api/openapi.yaml` via `pnpm openapi:gen`
+- `src/routeTree.gen.ts` - regenerated via `bun run routes:gen` (or chained inside typecheck/test/build)
+- `src/api/types.ts` (planned) - generated from `apps/api/openapi.yaml` via `bun run openapi:gen`

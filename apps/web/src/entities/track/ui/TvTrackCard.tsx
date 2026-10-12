@@ -59,18 +59,10 @@ export function TvTrackCard({ track, metadata, style }: TvTrackCardProps) {
           // defers rendering until the image loads (async), which makes it
           // untestable in jsdom. The spec section 7 explicitly permits a bare
           // <img> when it handles object-cover cleanly.
-          <img
-            src={coverUrl}
-            alt={coverAlt}
-            className="object-cover w-full h-full"
-          />
+          <img src={coverUrl} alt={coverAlt} className="object-cover w-full h-full" />
         ) : (
           // Placeholder block - neutral background, same dimensions as cover
-          <div
-            className="w-full h-full bg-content1"
-            role="img"
-            aria-label={coverAlt}
-          />
+          <div className="w-full h-full bg-content1" role="img" aria-label={coverAlt} />
         )}
 
         {/* Dark overlay - always present so the vote count is always readable */}

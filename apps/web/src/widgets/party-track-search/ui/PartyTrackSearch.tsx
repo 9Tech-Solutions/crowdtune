@@ -50,7 +50,7 @@ export function PartyTrackSearch() {
 
   // Read the committed query from the URL (drives data fetching).
   const search = useSearch({ from: '/party/$partyId/search' })
-  const committedQuery: string = (search as Record<string, unknown>).q as string ?? ''
+  const committedQuery: string = ((search as Record<string, unknown>).q as string) ?? ''
 
   // Local input state: updates on every keystroke.
   const [localQuery, setLocalQuery] = useState<string>(committedQuery)
@@ -163,15 +163,16 @@ export function PartyTrackSearch() {
         setPendingTracks((prev) => ({ ...prev, [key]: false }))
         setAddedTracks((prev) => ({ ...prev, [key]: true }))
         if (liveRef.current) {
-          const title = results.find(
-            (r) => trackIdentityKey(r.trackRef) === key,
-          )?.metadata?.title ?? ref.id
+          const title =
+            results.find((r) => trackIdentityKey(r.trackRef) === key)?.metadata?.title ?? ref.id
           liveRef.current.textContent = `${title} added to queue.`
         }
       },
       onError: () => {
         setPendingTracks((prev) => ({ ...prev, [key]: false }))
-        console.warn('[PartyTrackSearch] Failed to add track. Retry or show toast when toast API is wired.')
+        console.warn(
+          '[PartyTrackSearch] Failed to add track. Retry or show toast when toast API is wired.',
+        )
       },
     })
   }
@@ -244,12 +245,7 @@ export function PartyTrackSearch() {
   return (
     <div className="flex flex-col gap-4 pt-4">
       {/* Hidden live region for screen reader announcements */}
-      <div
-        ref={liveRef}
-        aria-live="polite"
-        aria-atomic="true"
-        className="sr-only"
-      />
+      <div ref={liveRef} aria-live="polite" aria-atomic="true" className="sr-only" />
 
       {/* Search input */}
       <div className="px-4">
@@ -266,15 +262,9 @@ export function PartyTrackSearch() {
       </div>
 
       {/* Results region */}
-      <div
-        role="region"
-        aria-label="Search results"
-        aria-busy={isLoading}
-      >
+      <div role="region" aria-label="Search results" aria-busy={isLoading}>
         {hasResults ? (
-          <ul className="list-none m-0 p-0">
-            {results.map((result) => renderRow(result))}
-          </ul>
+          <ul className="list-none m-0 p-0">{results.map((result) => renderRow(result))}</ul>
         ) : (
           renderContent()
         )}

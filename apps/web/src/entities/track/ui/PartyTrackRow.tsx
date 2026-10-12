@@ -105,7 +105,7 @@ export function PartyTrackRow({
 
   // Vote button icon state (spec section 3 trailing-actions)
   const showFilledHeart = hasVoted
-  const showOutlinedHeart = !hasVoted && (track != null && (track.voteCount > 0 || track.isFallback))
+  const showOutlinedHeart = !hasVoted && track != null && (track.voteCount > 0 || track.isFallback)
   // otherwise show plus icon
 
   // Show remove on non-playing rows when host + track has engagement

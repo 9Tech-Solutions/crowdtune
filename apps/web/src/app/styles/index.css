@@ -1,4 +1,4 @@
-@import "@heroui/styles";
+@import '@heroui/styles';
 
 /* Ken Burns slow pan-and-zoom for TV mode background (OQ-2 lock: pure CSS, no library). */
 @keyframes tv-ken-burns {

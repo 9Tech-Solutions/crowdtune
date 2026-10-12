@@ -4,15 +4,15 @@
 
 ## Project type
 
-Monorepo. pnpm workspaces for JS side; Go module per backend app.
+Monorepo. Bun workspaces for JS side; Go module per backend app.
 
 ## High-level layout
 
 ```
 crowdtune/
 ├── apps/
-│   ├── web/         React 19 + Vite 8 + TS 6 + Tailwind 4 + Zustand 5
-│   └── api/         Go 1.25 + Gin + pgx v5 + sqlc + goose
+│   ├── web/         React 19 + Vite+ 1.1 + TS 7 + Tailwind 4 + Zustand 5
+│   └── api/         Go 1.27 + Gin + pgx v5 + sqlc + goose
 ├── infra/
 │   └── migrations/  Postgres SQL migrations (goose)
 ├── docs/

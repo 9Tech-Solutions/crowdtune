@@ -16,23 +16,23 @@
 
 | Library | Version | Role |
 |---|---|---|
-| react / react-dom | 19.2.x | UI |
+| react / react-dom | 19.3.x | UI |
 | zustand | 5.0.x | client state |
-| @tanstack/react-router | 1.169.x | routing |
-| @tanstack/react-query | 5.100.x | server state |
+| @tanstack/react-router | 1.170.x | routing |
+| @tanstack/react-query | 5.104.x | server state |
 | @tailwindcss/vite + tailwindcss | 4.3.x | styling |
-| @neondatabase/neon-js | 0.6.0-beta | Neon Auth client (Better-Auth-based) |
-| @neondatabase/auth-ui | 0.2.0-beta | prebuilt sign-in/up React components |
+| @neondatabase/neon-js | 0.8.0-beta | Neon Auth client (Better-Auth-based) |
+| @heroui/react + @heroui/styles | 3.2.x | accessible UI and styles |
 
 ## Frontend dev libs
 
 | Library | Version | Role |
 |---|---|---|
-| vite | 8.0.x | bundler / dev server |
-| typescript | 6.0.x | typecheck |
-| vitest + @testing-library/* | 4.1.x / 16.x | unit tests |
+| vite-plus | 1.1.x | dev server, build, lint, format, test |
+| typescript | 7.0.x | typecheck |
+| Vite+ test + @testing-library/react | 5.0.x / 16.x | unit tests |
 | openapi-typescript | 7.13.x | TS client types from OpenAPI |
-| @tanstack/router-plugin | 1.167.x | route codegen (when routes exist) |
+| @tanstack/router-plugin | 1.168.x | route codegen (when routes exist) |
 
 ## Backend runtime libs (apps/api)
 

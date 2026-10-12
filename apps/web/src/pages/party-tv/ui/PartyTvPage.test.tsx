@@ -7,7 +7,7 @@
  * per spec section 12.
  */
 import { render, screen, fireEvent, act } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test'
 import { TestQueryProvider } from '@/shared/test/test-providers'
 import type { Track, Metadata } from '@/entities/track'
 import type { Party } from '@/entities/party'
@@ -35,7 +35,11 @@ vi.mock('../api/use-tv-queue-query', () => ({
 
 vi.mock('@/widgets/playback-progress-bar', () => ({
   PlaybackProgressBar: vi.fn(() => (
-    <div data-testid="playback-progress-bar" role="progressbar" aria-label="Track playback progress" />
+    <div
+      data-testid="playback-progress-bar"
+      role="progressbar"
+      aria-label="Track playback progress"
+    />
   )),
 }))
 
@@ -125,7 +129,12 @@ function renderPage() {
 beforeEach(() => {
   vi.clearAllMocks()
   mockUsePartyQuery.mockReturnValue({ data: null, isLoading: false, error: null })
-  mockUseTvQueueQuery.mockReturnValue({ tracks: [], metadataByKey: {}, isLoading: false, error: null })
+  mockUseTvQueueQuery.mockReturnValue({
+    tracks: [],
+    metadataByKey: {},
+    isLoading: false,
+    error: null,
+  })
   mockUseNavigate.mockReturnValue(vi.fn())
 
   // jsdom does not implement matchMedia; stub it so prefersReducedMotion()
@@ -152,7 +161,12 @@ beforeEach(() => {
 
 describe('loading state', () => {
   it('renders the loading panel when queue is loading', () => {
-    mockUseTvQueueQuery.mockReturnValue({ tracks: [], metadataByKey: {}, isLoading: true, error: null })
+    mockUseTvQueueQuery.mockReturnValue({
+      tracks: [],
+      metadataByKey: {},
+      isLoading: true,
+      error: null,
+    })
     renderPage()
     expect(screen.getByRole('status')).toBeInTheDocument()
     expect(screen.getByText(/Loading\.\.\./i)).toBeInTheDocument()
@@ -216,7 +230,12 @@ describe('error state', () => {
 describe('empty queue state', () => {
   it('renders the empty-queue panel when queue has zero tracks', () => {
     mockUsePartyQuery.mockReturnValue({ data: makeParty(), isLoading: false, error: null })
-    mockUseTvQueueQuery.mockReturnValue({ tracks: [], metadataByKey: {}, isLoading: false, error: null })
+    mockUseTvQueueQuery.mockReturnValue({
+      tracks: [],
+      metadataByKey: {},
+      isLoading: false,
+      error: null,
+    })
     renderPage()
     // copy review: "Queue is empty" heading
     expect(screen.getByText(/queue is empty/i)).toBeInTheDocument()
@@ -224,11 +243,24 @@ describe('empty queue state', () => {
 
   it('renders the TV mode text from the party record in the empty panel', () => {
     mockUsePartyQuery.mockReturnValue({
-      data: makeParty({ settings: { tvDisplayText: 'Add songs at crowdtune.app/TEST', allowAnonymousVoting: true, allowExplicitTracks: true, allowMultipleVotesPerSearch: true, maxTrackLengthMinutes: null } }),
+      data: makeParty({
+        settings: {
+          tvDisplayText: 'Add songs at crowdtune.app/TEST',
+          allowAnonymousVoting: true,
+          allowExplicitTracks: true,
+          allowMultipleVotesPerSearch: true,
+          maxTrackLengthMinutes: null,
+        },
+      }),
       isLoading: false,
       error: null,
     })
-    mockUseTvQueueQuery.mockReturnValue({ tracks: [], metadataByKey: {}, isLoading: false, error: null })
+    mockUseTvQueueQuery.mockReturnValue({
+      tracks: [],
+      metadataByKey: {},
+      isLoading: false,
+      error: null,
+    })
     renderPage()
     expect(screen.getByText('Add songs at crowdtune.app/TEST')).toBeInTheDocument()
   })
@@ -245,7 +277,9 @@ describe('populated state', () => {
     )
     const tracks = items.map((x) => x.track)
     const metadataByKey: Record<string, Metadata> = {}
-    items.forEach(({ key, metadata }) => { metadataByKey[key] = metadata })
+    items.forEach(({ key, metadata }) => {
+      metadataByKey[key] = metadata
+    })
 
     mockUseTvQueueQuery.mockReturnValue({ tracks, metadataByKey, isLoading: false, error: null })
     mockUsePartyQuery.mockReturnValue({ data: makeParty(), isLoading: false, error: null })
@@ -280,11 +314,21 @@ describe('populated state', () => {
     const items = [makeTrackWithKey(1, 'Track 1', 0)]
     const tracks = items.map((x) => x.track)
     const metadataByKey: Record<string, Metadata> = {}
-    items.forEach(({ key, metadata }) => { metadataByKey[key] = metadata })
+    items.forEach(({ key, metadata }) => {
+      metadataByKey[key] = metadata
+    })
 
     mockUseTvQueueQuery.mockReturnValue({ tracks, metadataByKey, isLoading: false, error: null })
     mockUsePartyQuery.mockReturnValue({
-      data: makeParty({ settings: { tvDisplayText: 'Join at TEST', allowAnonymousVoting: true, allowExplicitTracks: true, allowMultipleVotesPerSearch: true, maxTrackLengthMinutes: null } }),
+      data: makeParty({
+        settings: {
+          tvDisplayText: 'Join at TEST',
+          allowAnonymousVoting: true,
+          allowExplicitTracks: true,
+          allowMultipleVotesPerSearch: true,
+          maxTrackLengthMinutes: null,
+        },
+      }),
       isLoading: false,
       error: null,
     })
@@ -310,7 +354,9 @@ describe('queue strip card counts', () => {
     )
     const tracks = items.map((x) => x.track)
     const metadataByKey: Record<string, Metadata> = {}
-    items.forEach(({ key, metadata }) => { metadataByKey[key] = metadata })
+    items.forEach(({ key, metadata }) => {
+      metadataByKey[key] = metadata
+    })
     mockUseTvQueueQuery.mockReturnValue({ tracks, metadataByKey, isLoading: false, error: null })
     mockUsePartyQuery.mockReturnValue({ data: makeParty(), isLoading: false, error: null })
   }
@@ -444,34 +490,50 @@ describe('mouse cursor auto-hide', () => {
   it('mouse movement makes the cursor visible (cursor-auto class)', () => {
     const { container } = renderPage()
     const root = container.firstElementChild as HTMLElement
-    act(() => { fireEvent.mouseMove(window) })
+    act(() => {
+      fireEvent.mouseMove(window)
+    })
     expect(root.className).toContain('cursor-auto')
   })
 
   it('mouse cursor hides after 3000 milliseconds of no movement', () => {
     const { container } = renderPage()
     const root = container.firstElementChild as HTMLElement
-    act(() => { fireEvent.mouseMove(window) })
+    act(() => {
+      fireEvent.mouseMove(window)
+    })
     expect(root.className).toContain('cursor-auto')
-    act(() => { vi.advanceTimersByTime(3000) })
+    act(() => {
+      vi.advanceTimersByTime(3000)
+    })
     expect(root.className).toContain('cursor-none')
   })
 
   it('mouse movement before 3000ms resets the timer and keeps cursor visible', () => {
     const { container } = renderPage()
     const root = container.firstElementChild as HTMLElement
-    act(() => { fireEvent.mouseMove(window) })
-    act(() => { vi.advanceTimersByTime(2000) })
+    act(() => {
+      fireEvent.mouseMove(window)
+    })
+    act(() => {
+      vi.advanceTimersByTime(2000)
+    })
     // Move again before timer fires - resets the 3s window
-    act(() => { fireEvent.mouseMove(window) })
-    act(() => { vi.advanceTimersByTime(2000) })
+    act(() => {
+      fireEvent.mouseMove(window)
+    })
+    act(() => {
+      vi.advanceTimersByTime(2000)
+    })
     // Still visible - 2s have passed since last move, not 3s
     expect(root.className).toContain('cursor-auto')
   })
 
   it('component unmounts cleanly without timer leaks', () => {
     const { unmount } = renderPage()
-    act(() => { fireEvent.mouseMove(window) })
+    act(() => {
+      fireEvent.mouseMove(window)
+    })
     // Should not throw or warn when unmounting with a pending timer
     expect(() => unmount()).not.toThrow()
   })
@@ -527,7 +589,9 @@ describe('prefers-reduced-motion', () => {
     const key = `spotify-${track.ref.id}`
     mockUseTvQueueQuery.mockReturnValue({
       tracks: [track],
-      metadataByKey: { [key]: makeMetadata('Test', { backgroundImages: ['https://bg.example.com/1.jpg'] }) },
+      metadataByKey: {
+        [key]: makeMetadata('Test', { backgroundImages: ['https://bg.example.com/1.jpg'] }),
+      },
       isLoading: false,
       error: null,
     })
@@ -543,7 +607,9 @@ describe('prefers-reduced-motion', () => {
     const items = Array.from({ length: 3 }, (_, i) => makeTrackWithKey(i + 1, `Track ${i + 1}`))
     const tracks = items.map((x) => x.track)
     const metadataByKey: Record<string, Metadata> = {}
-    items.forEach(({ key, metadata }) => { metadataByKey[key] = metadata })
+    items.forEach(({ key, metadata }) => {
+      metadataByKey[key] = metadata
+    })
 
     mockUseTvQueueQuery.mockReturnValue({ tracks, metadataByKey, isLoading: false, error: null })
     mockUsePartyQuery.mockReturnValue({ data: makeParty(), isLoading: false, error: null })
@@ -582,7 +648,9 @@ describe('accessibility', () => {
     const items = Array.from({ length: 3 }, (_, i) => makeTrackWithKey(i + 1, `Track ${i + 1}`))
     const tracks = items.map((x) => x.track)
     const metadataByKey: Record<string, Metadata> = {}
-    items.forEach(({ key, metadata }) => { metadataByKey[key] = metadata })
+    items.forEach(({ key, metadata }) => {
+      metadataByKey[key] = metadata
+    })
     mockUseTvQueueQuery.mockReturnValue({ tracks, metadataByKey, isLoading: false, error: null })
     mockUsePartyQuery.mockReturnValue({ data: makeParty(), isLoading: false, error: null })
     renderPage()
@@ -593,7 +661,9 @@ describe('accessibility', () => {
     const items = Array.from({ length: 3 }, (_, i) => makeTrackWithKey(i + 1, `Track ${i + 1}`))
     const tracks = items.map((x) => x.track)
     const metadataByKey: Record<string, Metadata> = {}
-    items.forEach(({ key, metadata }) => { metadataByKey[key] = metadata })
+    items.forEach(({ key, metadata }) => {
+      metadataByKey[key] = metadata
+    })
     mockUseTvQueueQuery.mockReturnValue({ tracks, metadataByKey, isLoading: false, error: null })
     mockUsePartyQuery.mockReturnValue({ data: makeParty(), isLoading: false, error: null })
     renderPage()

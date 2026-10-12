@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vite-plus/test'
 import { sortedQueue, currentTrack, currentTrackKey } from './queue'
 import type { Track, Metadata } from '../model/types'
 

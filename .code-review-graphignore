@@ -1,5 +1,6 @@
 # Festify clone is reference-only - never index it
 .reference/**
+.reports/**
 
 # Build outputs
 node_modules/**
@@ -9,6 +10,7 @@ out/**
 .turbo/**
 .next/**
 .vite/**
+.vite-plus/**
 .cache/**
 
 # Go build artifacts
@@ -23,7 +25,7 @@ apps/api/vendor/**
 apps/web/src/api/types.ts
 
 # Dependency lockfiles do not need graph nodes
-pnpm-lock.yaml
+bun.lock
 go.sum
 package-lock.json
 yarn.lock

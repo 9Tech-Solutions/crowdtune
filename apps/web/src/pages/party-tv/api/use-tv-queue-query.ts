@@ -62,9 +62,7 @@ export function useTvQueueQuery(partyId: string): UseTvQueueQueryResult {
       const resp = await api<BackendQueueResponse>(
         `/api/parties/${encodeURIComponent(partyId)}/tracks`,
       )
-      const tracks = resp.tracks
-        .filter((t) => t.reference.provider === 'spotify')
-        .map(toTrack)
+      const tracks = resp.tracks.filter((t) => t.reference.provider === 'spotify').map(toTrack)
       const metadataByKey: Record<string, Metadata> = {}
       return { tracks, metadataByKey }
     },

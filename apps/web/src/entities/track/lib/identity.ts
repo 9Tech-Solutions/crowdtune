@@ -23,10 +23,7 @@ export function trackIdentityKey(input: Track | TrackReference): string {
  *  6. Same provider AND same id (strict) → equal.
  *  7. Else → not equal.
  */
-export function tracksAreEqual(
-  a: Track | null | undefined,
-  b: Track | null | undefined,
-): boolean {
+export function tracksAreEqual(a: Track | null | undefined, b: Track | null | undefined): boolean {
   // Rule 1: both absent
   if (a == null && b == null) return true
   // Rule 2: one absent

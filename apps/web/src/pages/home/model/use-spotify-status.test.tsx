@@ -1,5 +1,5 @@
 import { renderHook, waitFor } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vite-plus/test'
 import type { ReactNode } from 'react'
 import { createTestQueryClient, TestQueryProvider } from '@/shared/test/test-providers'
 import { useSpotifyStatus } from './use-spotify-status'
@@ -29,10 +29,9 @@ describe('useSpotifyStatus', () => {
     const client = createTestQueryClient()
     mockApi.mockResolvedValueOnce({ isConnected: true, isPremium: false })
 
-    const { result } = renderHook(
-      () => useSpotifyStatus('user-123'),
-      { wrapper: makeWrapper(client) },
-    )
+    const { result } = renderHook(() => useSpotifyStatus('user-123'), {
+      wrapper: makeWrapper(client),
+    })
 
     await waitFor(() => expect(result.current.isLoading).toBe(false))
 
@@ -45,10 +44,9 @@ describe('useSpotifyStatus', () => {
     // api never resolves — keeps query in loading state
     mockApi.mockReturnValueOnce(new Promise(() => {}))
 
-    const { result } = renderHook(
-      () => useSpotifyStatus('user-123'),
-      { wrapper: makeWrapper(client) },
-    )
+    const { result } = renderHook(() => useSpotifyStatus('user-123'), {
+      wrapper: makeWrapper(client),
+    })
 
     expect(result.current.isLoading).toBe(true)
     expect(result.current.data).toBeNull()
@@ -58,10 +56,9 @@ describe('useSpotifyStatus', () => {
     const client = createTestQueryClient()
     mockApi.mockRejectedValueOnce(new ApiError(500, 'internal_error', 'fail'))
 
-    const { result } = renderHook(
-      () => useSpotifyStatus('user-123'),
-      { wrapper: makeWrapper(client) },
-    )
+    const { result } = renderHook(() => useSpotifyStatus('user-123'), {
+      wrapper: makeWrapper(client),
+    })
 
     await waitFor(() => expect(result.current.isLoading).toBe(false))
 
@@ -72,10 +69,9 @@ describe('useSpotifyStatus', () => {
   it('stays_idle_when_userId_undefined', () => {
     const client = createTestQueryClient()
 
-    const { result } = renderHook(
-      () => useSpotifyStatus(undefined),
-      { wrapper: makeWrapper(client) },
-    )
+    const { result } = renderHook(() => useSpotifyStatus(undefined), {
+      wrapper: makeWrapper(client),
+    })
 
     // enabled: false — query never fires
     expect(result.current.isLoading).toBe(false)
@@ -89,10 +85,9 @@ describe('useSpotifyStatus', () => {
 
     mockApi.mockResolvedValueOnce({ isConnected: true, isPremium: false })
 
-    const { result: resultA, unmount } = renderHook(
-      () => useSpotifyStatus('userA'),
-      { wrapper: makeWrapper(sharedClient) },
-    )
+    const { result: resultA, unmount } = renderHook(() => useSpotifyStatus('userA'), {
+      wrapper: makeWrapper(sharedClient),
+    })
 
     await waitFor(() => expect(resultA.current.isLoading).toBe(false))
     expect(resultA.current.data?.isConnected).toBe(true)
@@ -102,10 +97,9 @@ describe('useSpotifyStatus', () => {
     // Second render with a different user on the same client
     mockApi.mockResolvedValueOnce({ isConnected: false, isPremium: false })
 
-    const { result: resultB } = renderHook(
-      () => useSpotifyStatus('userB'),
-      { wrapper: makeWrapper(sharedClient) },
-    )
+    const { result: resultB } = renderHook(() => useSpotifyStatus('userB'), {
+      wrapper: makeWrapper(sharedClient),
+    })
 
     await waitFor(() => expect(resultB.current.isLoading).toBe(false))
     // userB has a different cache entry — should NOT see userA's true value

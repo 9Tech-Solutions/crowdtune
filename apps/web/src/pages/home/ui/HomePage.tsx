@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { Card, Input, Button, Text, Spinner } from '@heroui/react'
+import { Card, Input, Button, Spinner } from '@heroui/react'
 import { getSession } from '@/shared/auth'
 import type { SessionUser } from '@/shared/auth'
 import { useJoinParty } from '../model/use-join-party'
@@ -15,12 +15,7 @@ import { usePlaybackCompatible } from '@/shared/lib/use-playback-compatible'
 
 type JoinError = 'not-found' | 'expired' | 'at-capacity' | 'network'
 
-type LowerButtonState =
-  | 'creating'
-  | 'create'
-  | 'checking'
-  | 'sign-in'
-  | 'connect-spotify'
+type LowerButtonState = 'creating' | 'create' | 'checking' | 'sign-in' | 'connect-spotify'
 
 // ---------------------------------------------------------------------------
 // Error messages (CrowdTune-original copy)
@@ -54,12 +49,7 @@ type LowerButtonProps = {
   onCreateParty: () => void
 }
 
-function LowerButton({
-  state,
-  onSignIn,
-  onConnectSpotify,
-  onCreateParty,
-}: LowerButtonProps) {
+function LowerButton({ state, onSignIn, onConnectSpotify, onCreateParty }: LowerButtonProps) {
   if (state === 'creating') {
     return (
       <Button variant="primary" size="lg" isDisabled className="w-full">
@@ -71,12 +61,7 @@ function LowerButton({
 
   if (state === 'create') {
     return (
-      <Button
-        variant="primary"
-        size="lg"
-        onPress={onCreateParty}
-        className="w-full"
-      >
+      <Button variant="primary" size="lg" onPress={onCreateParty} className="w-full">
         Create Party
       </Button>
     )
@@ -92,12 +77,7 @@ function LowerButton({
 
   if (state === 'connect-spotify') {
     return (
-      <Button
-        variant="secondary"
-        size="lg"
-        onPress={onConnectSpotify}
-        className="w-full"
-      >
+      <Button variant="secondary" size="lg" onPress={onConnectSpotify} className="w-full">
         Connect Spotify to create Party
       </Button>
     )
@@ -105,12 +85,7 @@ function LowerButton({
 
   // state === 'sign-in'
   return (
-    <Button
-      variant="secondary"
-      size="lg"
-      onPress={onSignIn}
-      className="w-full"
-    >
+    <Button variant="secondary" size="lg" onPress={onSignIn} className="w-full">
       Sign in to create Party
     </Button>
   )
@@ -192,8 +167,7 @@ export function HomePage() {
       onSuccess: ({ partyId }) => {
         void navigate({ to: '/party/$partyId', params: { partyId } })
       },
-      onError: () =>
-        setCreateError('Failed to create party. Please try again.'),
+      onError: () => setCreateError('Failed to create party. Please try again.'),
     })
   }
 
@@ -217,11 +191,7 @@ export function HomePage() {
   // silent fallback; toast system pending
   const { isPremium } = spotifyData ?? { isPremium: false }
 
-  const lowerButtonState = deriveLowerButtonState(
-    authState,
-    isPremium,
-    createMutation.isPending,
-  )
+  const lowerButtonState = deriveLowerButtonState(authState, isPremium, createMutation.isPending)
 
   const isJoining = joinMutation.isPending
   const isCreating = createMutation.isPending
@@ -230,13 +200,9 @@ export function HomePage() {
     <main className="min-h-screen flex items-center justify-center px-4">
       <Card className="max-w-md w-full">
         <Card.Content className="flex flex-col items-center gap-6 py-10 text-center">
-          <Text type="h1" weight="bold">
-            CrowdTune
-          </Text>
+          <h1 className="text-4xl font-bold">CrowdTune</h1>
 
-          <Text type="body" color="muted">
-            Let your crowd shape the soundtrack, one vote at a time.
-          </Text>
+          <p className="text-muted">Let your crowd shape the soundtrack, one vote at a time.</p>
 
           <div className="flex flex-col gap-3 w-full">
             <Input
@@ -268,9 +234,7 @@ export function HomePage() {
             </Button>
 
             {joinError && (
-              <p className="text-sm text-red-500 text-center">
-                {JOIN_ERROR_MESSAGES[joinError]}
-              </p>
+              <p className="text-sm text-red-500 text-center">{JOIN_ERROR_MESSAGES[joinError]}</p>
             )}
           </div>
 
@@ -283,9 +247,7 @@ export function HomePage() {
                 onCreateParty={handleCreateParty}
               />
 
-              {createError && (
-                <p className="text-sm text-red-500 text-center">{createError}</p>
-              )}
+              {createError && <p className="text-sm text-red-500 text-center">{createError}</p>}
             </div>
           )}
         </Card.Content>

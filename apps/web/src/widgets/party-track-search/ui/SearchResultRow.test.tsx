@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vite-plus/test'
 
 import type { Metadata, TrackReference } from '@/entities/track'
 import { TestQueryProvider } from '@/shared/test/test-providers'
@@ -124,7 +124,9 @@ describe('add button accessible name', () => {
 describe('add pending state', () => {
   it('shows "Adding..." in the button aria-label when isAddPending', () => {
     renderRow({ isAddPending: true })
-    expect(screen.getByRole('button', { name: /Adding Bohemian Rhapsody\.\.\./i })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Adding Bohemian Rhapsody\.\.\./i }),
+    ).toBeInTheDocument()
   })
 
   it('disables the button while pending', () => {

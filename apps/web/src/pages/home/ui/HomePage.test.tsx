@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vite-plus/test'
 import { TestQueryProvider } from '@/shared/test/test-providers'
 import { HomePage } from './HomePage'
 import type { UseMutationResult } from '@tanstack/react-query'
@@ -118,7 +118,11 @@ beforeEach(() => {
   mockNavigate.mockReset()
   mockUseJoinParty.mockReturnValue(makeJoinMutation({}))
   mockUseCreateParty.mockReturnValue(makeCreateMutation({}))
-  mockUseSpotifyStatus.mockReturnValue({ data: { isConnected: false, isPremium: false }, isLoading: false, error: null })
+  mockUseSpotifyStatus.mockReturnValue({
+    data: { isConnected: false, isPremium: false },
+    isLoading: false,
+    error: null,
+  })
   mockUsePlaybackCompatible.mockReturnValue(false)
   // Default: unauthenticated session. Tests that want the authenticated
   // or pending paths override this in the test body.
@@ -137,23 +141,17 @@ describe('initial render', () => {
 
   it('shows the functional description', () => {
     renderPage()
-    expect(
-      screen.getByText(/let your crowd shape the soundtrack/i),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/let your crowd shape the soundtrack/i)).toBeInTheDocument()
   })
 
   it('shows the party code input', () => {
     renderPage()
-    expect(
-      screen.getByRole('textbox', { name: /party code/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: /party code/i })).toBeInTheDocument()
   })
 
   it('Join Party button is disabled when input is empty', () => {
     renderPage()
-    expect(
-      screen.getByRole('button', { name: /join party/i }),
-    ).toBeDisabled()
+    expect(screen.getByRole('button', { name: /join party/i })).toBeDisabled()
   })
 })
 
@@ -167,9 +165,7 @@ describe('party code input', () => {
     renderPage()
     const input = screen.getByRole('textbox', { name: /party code/i })
     await user.type(input, '12345')
-    expect(
-      screen.getByRole('button', { name: /join party/i }),
-    ).not.toBeDisabled()
+    expect(screen.getByRole('button', { name: /join party/i })).not.toBeDisabled()
   })
 
   it('Join Party button becomes disabled again when input is cleared', async () => {
@@ -178,9 +174,7 @@ describe('party code input', () => {
     const input = screen.getByRole('textbox', { name: /party code/i })
     await user.type(input, '12345')
     await user.clear(input)
-    expect(
-      screen.getByRole('button', { name: /join party/i }),
-    ).toBeDisabled()
+    expect(screen.getByRole('button', { name: /join party/i })).toBeDisabled()
   })
 })
 
@@ -196,10 +190,7 @@ describe('Enter key on valid input', () => {
     renderPage()
     const input = screen.getByRole('textbox', { name: /party code/i })
     await user.type(input, '12345{Enter}')
-    expect(mutateFn).toHaveBeenCalledWith(
-      { partyCode: '12345' },
-      expect.any(Object),
-    )
+    expect(mutateFn).toHaveBeenCalledWith({ partyCode: '12345' }, expect.any(Object))
   })
 })
 
@@ -216,10 +207,7 @@ describe('Join Party button click', () => {
     const input = screen.getByRole('textbox', { name: /party code/i })
     await user.type(input, '99999')
     await user.click(screen.getByRole('button', { name: /join party/i }))
-    expect(mutateFn).toHaveBeenCalledWith(
-      { partyCode: '99999' },
-      expect.any(Object),
-    )
+    expect(mutateFn).toHaveBeenCalledWith({ partyCode: '99999' }, expect.any(Object))
   })
 })
 
@@ -248,10 +236,7 @@ describe('join success', () => {
     }
     mockUseJoinParty.mockReturnValue(makeJoinMutation({ mutateFn }))
     renderPage()
-    await user.type(
-      screen.getByRole('textbox', { name: /party code/i }),
-      'ABC123',
-    )
+    await user.type(screen.getByRole('textbox', { name: /party code/i }), 'ABC123')
     await user.click(screen.getByRole('button', { name: /join party/i }))
     expect(mockNavigate).toHaveBeenCalledWith({
       to: '/party/$partyId',
@@ -272,10 +257,7 @@ describe('join failure', () => {
     }
     mockUseJoinParty.mockReturnValue(makeJoinMutation({ mutateFn }))
     renderPage()
-    await user.type(
-      screen.getByRole('textbox', { name: /party code/i }),
-      'BADCODE',
-    )
+    await user.type(screen.getByRole('textbox', { name: /party code/i }), 'BADCODE')
     await user.click(screen.getByRole('button', { name: /join party/i }))
     await waitFor(() => {
       expect(screen.getByText(/party not found/i)).toBeInTheDocument()
@@ -291,7 +273,11 @@ describe('lower button: not authenticated', () => {
   it('shows Sign in to create Party and navigates to /auth/$ on press', async () => {
     const user = userEvent.setup()
     mockUsePlaybackCompatible.mockReturnValue(true)
-    mockUseSpotifyStatus.mockReturnValue({ data: { isConnected: false, isPremium: false }, isLoading: false, error: null })
+    mockUseSpotifyStatus.mockReturnValue({
+      data: { isConnected: false, isPremium: false },
+      isLoading: false,
+      error: null,
+    })
     mockGetSession.mockResolvedValue(null)
     renderPage()
     const btn = await screen.findByRole('button', { name: /sign in to create party/i })
@@ -314,7 +300,11 @@ describe('lower button: not authenticated', () => {
 describe('lower button: connect-spotify', () => {
   it('shows Connect Spotify when authenticated but Spotify not Premium', async () => {
     mockUsePlaybackCompatible.mockReturnValue(true)
-    mockUseSpotifyStatus.mockReturnValue({ data: { isConnected: false, isPremium: false }, isLoading: false, error: null })
+    mockUseSpotifyStatus.mockReturnValue({
+      data: { isConnected: false, isPremium: false },
+      isLoading: false,
+      error: null,
+    })
     mockGetSession.mockResolvedValue({
       id: 'u1',
       name: 'Alice',
@@ -351,16 +341,18 @@ describe('lower button: auth unknown (checking)', () => {
 describe('lower button: authenticated + premium', () => {
   it('shows Create Party when authenticated and Spotify Premium is confirmed', async () => {
     mockUsePlaybackCompatible.mockReturnValue(true)
-    mockUseSpotifyStatus.mockReturnValue({ data: { isConnected: true, isPremium: true }, isLoading: false, error: null })
+    mockUseSpotifyStatus.mockReturnValue({
+      data: { isConnected: true, isPremium: true },
+      isLoading: false,
+      error: null,
+    })
     mockGetSession.mockResolvedValue({
       id: 'u1',
       name: 'Alice',
       email: 'alice@example.com',
     })
     renderPage()
-    expect(
-      await screen.findByRole('button', { name: /create party/i }),
-    ).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /create party/i })).toBeInTheDocument()
   })
 })
 
@@ -386,20 +378,14 @@ describe('browser incompatibility', () => {
     mockUsePlaybackCompatible.mockReturnValue(false)
     renderPage()
     expect(screen.queryByRole('button', { name: /create party/i })).toBeNull()
-    expect(
-      screen.queryByRole('button', { name: /sign in to create party/i }),
-    ).toBeNull()
+    expect(screen.queryByRole('button', { name: /sign in to create party/i })).toBeNull()
     expect(screen.queryByRole('button', { name: /checking/i })).toBeNull()
   })
 
   it('still renders the join form when browser is not compatible', () => {
     mockUsePlaybackCompatible.mockReturnValue(false)
     renderPage()
-    expect(
-      screen.getByRole('textbox', { name: /party code/i }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: /join party/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: /party code/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /join party/i })).toBeInTheDocument()
   })
 })

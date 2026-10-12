@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test'
 
 import type { Track, Metadata } from '@/entities/track'
 import { trackIdentityKey } from '@/entities/track'
@@ -128,7 +128,12 @@ describe('empty state (host)', () => {
     const onNavigate = vi.fn()
     render(
       <PartyQueue
-        {...defaultProps({ isOwner: true, tracks: [], onNavigate, settingsRoutePath: '/party/abc/settings' })}
+        {...defaultProps({
+          isOwner: true,
+          tracks: [],
+          onNavigate,
+          settingsRoutePath: '/party/abc/settings',
+        })}
       />,
     )
     await userEvent.click(screen.getByRole('link', { name: /go to settings/i }))
@@ -302,9 +307,9 @@ describe('reorder animation', () => {
   })
 
   afterEach(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // oxlint-disable-next-line @typescript-eslint/no-explicit-any
     delete (document as any).startViewTransition
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // oxlint-disable-next-line @typescript-eslint/no-explicit-any
     delete (window as any).matchMedia
   })
 
@@ -313,7 +318,9 @@ describe('reorder animation', () => {
 
     const initialTracks = [TRACK_A, TRACK_B]
     const { rerender } = render(
-      <PartyQueue {...defaultProps({ tracks: initialTracks, metadata: metadataFor(TRACK_A, TRACK_B) })} />,
+      <PartyQueue
+        {...defaultProps({ tracks: initialTracks, metadata: metadataFor(TRACK_A, TRACK_B) })}
+      />,
     )
 
     // First render: no transition (prevOrder is empty).
@@ -334,7 +341,9 @@ describe('reorder animation', () => {
 
     const initialTracks = [TRACK_A, TRACK_B]
     const { rerender } = render(
-      <PartyQueue {...defaultProps({ tracks: initialTracks, metadata: metadataFor(TRACK_A, TRACK_B) })} />,
+      <PartyQueue
+        {...defaultProps({ tracks: initialTracks, metadata: metadataFor(TRACK_A, TRACK_B) })}
+      />,
     )
 
     rerender(

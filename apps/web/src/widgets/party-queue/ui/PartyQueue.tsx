@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Spinner, Text } from '@heroui/react'
+import { Spinner } from '@heroui/react'
 
 import type { Playback } from '@/entities/party'
 import type { Track, Metadata, TrackReference } from '@/entities/track'
@@ -75,10 +75,8 @@ function HostEmptyState({
 }) {
   return (
     <div className="flex flex-col items-center gap-3 px-8 py-12 text-center">
-      <Text type="h2" align="center">
-        The queue is empty
-      </Text>
-      <Text type="body-sm" color="muted" align="center">
+      <h2 className="text-3xl font-semibold text-center">The queue is empty</h2>
+      <p className="text-sm text-muted text-center">
         Add a fallback playlist so music keeps playing.{' '}
         {/*
           Spec section 7: "render the link as a TanStack Router Link component
@@ -96,7 +94,7 @@ function HostEmptyState({
         >
           Go to settings
         </a>
-      </Text>
+      </p>
     </div>
   )
 }
@@ -104,12 +102,10 @@ function HostEmptyState({
 function GuestEmptyState() {
   return (
     <div className="flex flex-col items-center gap-3 px-8 py-12 text-center">
-      <Text type="h2" align="center">
-        The queue is empty
-      </Text>
-      <Text type="body-sm" color="muted" align="center">
+      <h2 className="text-3xl font-semibold text-center">The queue is empty</h2>
+      <p className="text-sm text-muted text-center">
         Search for your favourite tracks and add them to the queue.
-      </Text>
+      </p>
     </div>
   )
 }

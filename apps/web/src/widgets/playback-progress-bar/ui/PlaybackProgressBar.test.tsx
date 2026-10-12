@@ -1,5 +1,5 @@
 import { render, act } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test'
 
 import type { Playback } from '@/entities/party'
 import { PlaybackProgressBar } from './PlaybackProgressBar'
@@ -101,9 +101,7 @@ describe('2. aria-valuenow reflects percentage', () => {
   it('reflects the rounded computed percentage after effect runs for a playing track', () => {
     // lastPositionMs 90_000 out of 180_000ms = exactly 50%; system time = BASE_TIME so elapsed = 0.
     const playback = makePlayback({ lastPositionMs: 90_000 })
-    const { container } = render(
-      <PlaybackProgressBar playback={playback} durationMs={180_000} />,
-    )
+    const { container } = render(<PlaybackProgressBar playback={playback} durationMs={180_000} />)
     // The ARIA effect fires synchronously in jsdom after render.
     const host = container.querySelector('[role="progressbar"]')
     expect(host?.getAttribute('aria-valuenow')).toBe('50')
@@ -112,9 +110,7 @@ describe('2. aria-valuenow reflects percentage', () => {
   it('reflects the rounded percentage for a paused track', () => {
     // paused at 45_000ms out of 180_000ms = 25%
     const playback = makePlayback({ playing: false, lastPositionMs: 45_000 })
-    const { container } = render(
-      <PlaybackProgressBar playback={playback} durationMs={180_000} />,
-    )
+    const { container } = render(<PlaybackProgressBar playback={playback} durationMs={180_000} />)
     const host = container.querySelector('[role="progressbar"]')
     expect(host?.getAttribute('aria-valuenow')).toBe('25')
   })
@@ -126,9 +122,7 @@ describe('2. aria-valuenow reflects percentage', () => {
 
 describe('3. aria-valuenow omitted when playback null', () => {
   it('does not set aria-valuenow when playback prop is null', () => {
-    const { container } = render(
-      <PlaybackProgressBar playback={null} durationMs={180_000} />,
-    )
+    const { container } = render(<PlaybackProgressBar playback={null} durationMs={180_000} />)
     const host = container.querySelector('[role="progressbar"]')
     expect(host?.hasAttribute('aria-valuenow')).toBe(false)
   })
@@ -148,9 +142,7 @@ describe('4. aria-valuenow omitted when duration invalid', () => {
   })
 
   it('omits aria-valuenow when durationMs is zero', () => {
-    const { container } = render(
-      <PlaybackProgressBar playback={makePlayback()} durationMs={0} />,
-    )
+    const { container } = render(<PlaybackProgressBar playback={makePlayback()} durationMs={0} />)
     const host = container.querySelector('[role="progressbar"]')
     expect(host?.hasAttribute('aria-valuenow')).toBe(false)
   })
@@ -163,9 +155,7 @@ describe('4. aria-valuenow omitted when duration invalid', () => {
 describe('5. playing state fill transform', () => {
   it('after flushing both frames the fill scaleX is 1 (targeting 100%)', () => {
     const playback = makePlayback({ lastPositionMs: 0 })
-    const { container } = render(
-      <PlaybackProgressBar playback={playback} durationMs={180_000} />,
-    )
+    const { container } = render(<PlaybackProgressBar playback={playback} durationMs={180_000} />)
     act(() => {
       flushAllFrames()
     })
@@ -177,9 +167,7 @@ describe('5. playing state fill transform', () => {
   it('after frame 1 only, fill scaleX is the computed current percentage', () => {
     // 90s elapsed since lastChange, track 180s: displayed = 90000ms / 180000ms = 0.5
     const playback = makePlayback({ lastPositionMs: 90_000 })
-    const { container } = render(
-      <PlaybackProgressBar playback={playback} durationMs={180_000} />,
-    )
+    const { container } = render(<PlaybackProgressBar playback={playback} durationMs={180_000} />)
     act(() => {
       flushOneFrame() // only frame 1
     })
@@ -195,9 +183,7 @@ describe('5. playing state fill transform', () => {
 describe('6. paused state fill', () => {
   it('sets scaleX from lastPositionMs without animation frames', () => {
     const playback = makePlayback({ playing: false, lastPositionMs: 60_000 })
-    const { container } = render(
-      <PlaybackProgressBar playback={playback} durationMs={180_000} />,
-    )
+    const { container } = render(<PlaybackProgressBar playback={playback} durationMs={180_000} />)
     const fill = container.querySelector('[role="progressbar"] > div') as HTMLDivElement
     // Paused path is synchronous (no rAF needed).
     // 60000/180000 = 0.333...
@@ -213,18 +199,14 @@ describe('6. paused state fill', () => {
 describe('7. paused opacity', () => {
   it('fill opacity is 0.5 when playback is paused', () => {
     const playback = makePlayback({ playing: false, lastPositionMs: 0 })
-    const { container } = render(
-      <PlaybackProgressBar playback={playback} durationMs={180_000} />,
-    )
+    const { container } = render(<PlaybackProgressBar playback={playback} durationMs={180_000} />)
     const fill = container.querySelector('[role="progressbar"] > div') as HTMLDivElement
     expect(fill.style.opacity).toBe('0.5')
   })
 
   it('fill opacity is 1 when playing (after frame 1)', () => {
     const playback = makePlayback({ playing: true, lastPositionMs: 0 })
-    const { container } = render(
-      <PlaybackProgressBar playback={playback} durationMs={180_000} />,
-    )
+    const { container } = render(<PlaybackProgressBar playback={playback} durationMs={180_000} />)
     act(() => {
       flushOneFrame() // frame 1 sets opacity to 1
     })
@@ -252,12 +234,7 @@ describe('8. two-frame sequence on mount', () => {
 
   it('does NOT call requestAnimationFrame when paused', () => {
     const rafSpy = vi.mocked(window.requestAnimationFrame)
-    render(
-      <PlaybackProgressBar
-        playback={makePlayback({ playing: false })}
-        durationMs={180_000}
-      />,
-    )
+    render(<PlaybackProgressBar playback={makePlayback({ playing: false })} durationMs={180_000} />)
     expect(rafSpy).not.toHaveBeenCalled()
   })
 })
@@ -296,9 +273,7 @@ describe('10. re-anchor on prop change', () => {
     const rafSpy = vi.mocked(window.requestAnimationFrame)
 
     const playback1 = makePlayback({ lastPositionMs: 0 })
-    const { rerender } = render(
-      <PlaybackProgressBar playback={playback1} durationMs={180_000} />,
-    )
+    const { rerender } = render(<PlaybackProgressBar playback={playback1} durationMs={180_000} />)
 
     act(() => flushAllFrames()) // flush both frames for track 1
     const callsAfterMount = rafSpy.mock.calls.length
@@ -321,17 +296,13 @@ describe('10. re-anchor on prop change', () => {
 
 describe('11. layout slot preserved when data absent', () => {
   it('host element remains in the DOM when playback is null', () => {
-    const { container } = render(
-      <PlaybackProgressBar playback={null} durationMs={null} />,
-    )
+    const { container } = render(<PlaybackProgressBar playback={null} durationMs={null} />)
     const host = container.querySelector('[role="progressbar"]')
     expect(host).not.toBeNull()
   })
 
   it('host element has h-px class for the 1px height reservation', () => {
-    const { container } = render(
-      <PlaybackProgressBar playback={null} durationMs={null} />,
-    )
+    const { container } = render(<PlaybackProgressBar playback={null} durationMs={null} />)
     const host = container.querySelector('[role="progressbar"]')
     expect(host?.classList.contains('h-px')).toBe(true)
   })
@@ -344,9 +315,7 @@ describe('11. layout slot preserved when data absent', () => {
 describe('12. aria-valuenow throttle', () => {
   it('aria-valuenow does not change in the sub-1s window when playing', () => {
     const playback = makePlayback({ lastPositionMs: 0 })
-    const { container } = render(
-      <PlaybackProgressBar playback={playback} durationMs={180_000} />,
-    )
+    const { container } = render(<PlaybackProgressBar playback={playback} durationMs={180_000} />)
 
     const host = container.querySelector('[role="progressbar"]') as HTMLElement
     const initialValue = host.getAttribute('aria-valuenow')
@@ -362,9 +331,7 @@ describe('12. aria-valuenow throttle', () => {
 
   it('aria-valuenow updates after the 1s interval fires', () => {
     const playback = makePlayback({ lastPositionMs: 0 })
-    const { container } = render(
-      <PlaybackProgressBar playback={playback} durationMs={180_000} />,
-    )
+    const { container } = render(<PlaybackProgressBar playback={playback} durationMs={180_000} />)
 
     const host = container.querySelector('[role="progressbar"]') as HTMLElement
     const initialValue = host.getAttribute('aria-valuenow')

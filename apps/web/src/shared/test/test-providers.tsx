@@ -1,7 +1,7 @@
 // Test-only file: HMR is not a concern here, so the react-refresh
 // "only-export-components" rule is irrelevant. Mixing the QueryClient factory
 // with the provider component keeps tests ergonomic.
-/* eslint-disable react-refresh/only-export-components */
+/* oxlint-disable react-refresh/only-export-components */
 import type { ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 

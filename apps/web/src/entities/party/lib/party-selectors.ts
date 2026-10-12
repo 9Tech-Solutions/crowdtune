@@ -17,9 +17,7 @@ export function isHost(
  * Returns the masterId from the party's embedded playback sub-object,
  * or null when no party is present or no master is designated.
  */
-export function playbackMasterId(
-  party: Party | null | undefined,
-): string | null {
+export function playbackMasterId(party: Party | null | undefined): string | null {
   return party?.playback?.masterId ?? null
 }
 
@@ -56,8 +54,6 @@ export function hasOtherPlaybackMaster(
  * Returns the full embedded Playback sub-object from the party record,
  * or null when no party is present. No transformation applied.
  */
-export function playbackState(
-  party: Party | null | undefined,
-): Playback | null {
+export function playbackState(party: Party | null | undefined): Playback | null {
   return party?.playback ?? null
 }

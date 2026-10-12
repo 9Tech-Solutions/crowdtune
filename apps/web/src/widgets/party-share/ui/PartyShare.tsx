@@ -129,10 +129,7 @@ export function PartyShare() {
       </p>
 
       {/* Join code display - large, centered, user-selectable */}
-      <p
-        aria-label="Party join code"
-        className="text-center text-[2rem] font-bold select-text"
-      >
+      <p aria-label="Party join code" className="text-center text-[2rem] font-bold select-text">
         {/* Defensive fallback: backend always assigns shortId, but guard anyway */}
         {party.shortId || '-'}
       </p>
@@ -140,10 +137,7 @@ export function PartyShare() {
       {/* Share button - only when Web Share API is available */}
       {isShareSupported && (
         <div className="flex justify-center">
-          <Button
-            onPress={() => void handleShare()}
-            aria-label="Share party join link"
-          >
+          <Button onPress={() => void handleShare()} aria-label="Share party join link">
             {/* product copy review (spec OQ-3) */}
             Share
           </Button>

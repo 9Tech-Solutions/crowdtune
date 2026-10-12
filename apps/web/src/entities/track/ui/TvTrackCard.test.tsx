@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vite-plus/test'
 
 import type { Track, TrackReference, Metadata } from '../model/types'
 import { TvTrackCard, type TvTrackCardProps } from './TvTrackCard'
@@ -50,7 +50,9 @@ function renderCard(overrides: Partial<TvTrackCardProps> = {}) {
 
 describe('TvTrackCard', () => {
   it('Renders cover image when metadata is present with at least one image', () => {
-    renderCard({ metadata: makeMetadata({ coverImages: [{ url: 'cover-300.jpg', width: 300, height: 300 }] }) })
+    renderCard({
+      metadata: makeMetadata({ coverImages: [{ url: 'cover-300.jpg', width: 300, height: 300 }] }),
+    })
     // Plain <img> is rendered when coverUrl is defined
     const img = screen.getByAltText('Test Track')
     expect(img).toBeInTheDocument()
@@ -149,11 +151,7 @@ describe('TvTrackCard', () => {
 
     const updatedTrack = { ...track, voteCount: 5 }
     rerender(
-      <TvTrackCard
-        trackRef={makeTrackRef()}
-        track={updatedTrack}
-        metadata={makeMetadata()}
-      />
+      <TvTrackCard trackRef={makeTrackRef()} track={updatedTrack} metadata={makeMetadata()} />,
     )
     expect(screen.getByText('5')).toBeInTheDocument()
     expect(screen.queryByText('1')).not.toBeInTheDocument()

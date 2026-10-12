@@ -8,7 +8,7 @@
  */
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 import type { Party } from '@/entities/party'
@@ -22,9 +22,7 @@ vi.mock('@tanstack/react-router', () => ({
 }))
 
 vi.mock('@/shared/auth', () => ({
-  getSession: vi.fn(() =>
-    Promise.resolve({ id: 'host-user-1', name: 'Host', email: 'h@ex.com' }),
-  ),
+  getSession: vi.fn(() => Promise.resolve({ id: 'host-user-1', name: 'Host', email: 'h@ex.com' })),
 }))
 
 // Import AFTER mocks are registered
@@ -78,9 +76,7 @@ function renderWidget(party: Party | null = makeParty(), sessionPending = false)
   if (!sessionPending) {
     client.setQueryData(
       ['session'],
-      currentSessionUserId
-        ? { id: currentSessionUserId, name: 'Host', email: 'h@ex.com' }
-        : null,
+      currentSessionUserId ? { id: currentSessionUserId, name: 'Host', email: 'h@ex.com' } : null,
     )
   }
   // When sessionPending=true the cache has no session data, simulating a
@@ -94,7 +90,7 @@ function renderWidget(party: Party | null = makeParty(), sessionPending = false)
   )
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// oxlint-disable-next-line @typescript-eslint/no-explicit-any
 function setMock<F extends (...args: any[]) => any>(fn: F, value: ReturnType<F>) {
   vi.mocked(fn).mockReturnValue(value)
 }
@@ -103,9 +99,7 @@ function resetDefaultMocks() {
   setMock(
     getSession,
     Promise.resolve(
-      currentSessionUserId
-        ? { id: currentSessionUserId, name: 'Host', email: 'h@ex.com' }
-        : null,
+      currentSessionUserId ? { id: currentSessionUserId, name: 'Host', email: 'h@ex.com' } : null,
     ) as ReturnType<typeof getSession>,
   )
 }
@@ -127,10 +121,7 @@ describe('loading state', () => {
 
   it('spinner has aria-label "Loading party details..."', () => {
     renderWidget(null)
-    expect(screen.getByRole('status')).toHaveAttribute(
-      'aria-label',
-      'Loading party details...',
-    )
+    expect(screen.getByRole('status')).toHaveAttribute('aria-label', 'Loading party details...')
   })
 
   it('does not render the join code while loading', () => {
@@ -164,9 +155,7 @@ describe('host-gate', () => {
 
   it('renders the unauthorized message when user is not the host', () => {
     renderWidget()
-    expect(
-      screen.getByText(/only the party host can view share options/i),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/only the party host can view share options/i)).toBeInTheDocument()
   })
 
   it('does not render the join code for a non-host', () => {

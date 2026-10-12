@@ -17,13 +17,9 @@
 service-account*.json
 firebase-adminsdk*.json
 
-# --- Node / pnpm ---
+# --- Bun / Node ---
 node_modules/
-.pnpm-store/
-.pnpm-debug.log*
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
 # --- Build outputs ---
 dist/
@@ -35,6 +31,7 @@ out/
 .cache/
 .parcel-cache/
 .vite/
+.vite-plus/
 
 # --- Test / coverage ---
 coverage/

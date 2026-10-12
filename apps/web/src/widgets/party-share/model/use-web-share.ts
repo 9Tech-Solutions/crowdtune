@@ -22,8 +22,7 @@ export type UseWebShareResult = {
 }
 
 export function useWebShare(): UseWebShareResult {
-  const isSupported =
-    typeof navigator !== 'undefined' && typeof navigator.share === 'function'
+  const isSupported = typeof navigator !== 'undefined' && typeof navigator.share === 'function'
 
   async function share(payload: WebSharePayload): Promise<void> {
     if (!isSupported) return

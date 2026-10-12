@@ -47,9 +47,6 @@ export async function getSession(): Promise<SessionUser | null> {
   return result?.data?.user ?? null
 }
 
-export function signInWithSocial(
-  provider: string,
-  callbackURL: string,
-): Promise<unknown> {
+export function signInWithSocial(provider: string, callbackURL: string): Promise<unknown> {
   return adapter.signIn.social({ provider, callbackURL })
 }

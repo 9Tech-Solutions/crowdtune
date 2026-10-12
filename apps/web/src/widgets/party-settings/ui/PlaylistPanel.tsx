@@ -47,18 +47,16 @@ export function PlaylistPanel({
     <section aria-label="Fallback Playlist">
       <h2 className="text-lg font-semibold mb-4">Fallback Playlist</h2>
 
-      {!isSpotifyConnected ? (
-        renderConnectPrompt(isSpotifyAuthInProgress, onConnectSpotify)
-      ) : (
-        renderPicker(
-          playlists,
-          isPlaylistsLoading,
-          isInsertPending,
-          playlistFilter,
-          onFilterChange,
-          onInsertPlaylist,
-        )
-      )}
+      {!isSpotifyConnected
+        ? renderConnectPrompt(isSpotifyAuthInProgress, onConnectSpotify)
+        : renderPicker(
+            playlists,
+            isPlaylistsLoading,
+            isInsertPending,
+            playlistFilter,
+            onFilterChange,
+            onInsertPlaylist,
+          )}
     </section>
   )
 }
@@ -67,10 +65,7 @@ export function PlaylistPanel({
 // Spotify not-connected prompt
 // ---------------------------------------------------------------------------
 
-function renderConnectPrompt(
-  isAuthInProgress: boolean,
-  onConnect: () => void,
-): React.ReactNode {
+function renderConnectPrompt(isAuthInProgress: boolean, onConnect: () => void): React.ReactNode {
   return (
     <div className="flex flex-col gap-3">
       {isAuthInProgress ? (
@@ -81,11 +76,7 @@ function renderConnectPrompt(
           </p>
         </>
       ) : (
-        <Button
-          variant="secondary"
-          aria-label="Connect with Spotify"
-          onPress={onConnect}
-        >
+        <Button variant="secondary" aria-label="Connect with Spotify" onPress={onConnect}>
           Connect with Spotify
         </Button>
       )}
@@ -139,9 +130,7 @@ function renderPicker(
             </p>
           </>
         ) : playlists.length === 0 ? (
-          <p className="text-sm text-muted py-4">
-            No playlists found in your Spotify account.
-          </p>
+          <p className="text-sm text-muted py-4">No playlists found in your Spotify account.</p>
         ) : filtered.length === 0 ? (
           <p className="text-sm text-muted py-4">No playlists match your search.</p>
         ) : (

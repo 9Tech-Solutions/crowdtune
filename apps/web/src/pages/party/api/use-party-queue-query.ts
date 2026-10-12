@@ -52,9 +52,7 @@ export function usePartyQueueQuery(partyId: string): UsePartyQueueQueryResult {
       const resp = await api<BackendQueueResponse>(
         `/api/parties/${encodeURIComponent(partyId)}/tracks`,
       )
-      return resp.tracks
-        .filter((t) => t.reference.provider === 'spotify')
-        .map(toTrack)
+      return resp.tracks.filter((t) => t.reference.provider === 'spotify').map(toTrack)
     },
     staleTime: 3000,
     refetchInterval: 3000,

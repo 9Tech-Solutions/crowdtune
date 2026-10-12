@@ -52,10 +52,7 @@ export function SearchResultRow({
       : 'Loading track'
 
   return (
-    <div
-      className="flex items-center gap-3 px-4 py-2"
-      aria-label={rowAriaLabel}
-    >
+    <div className="flex items-center gap-3 px-4 py-2" aria-label={rowAriaLabel}>
       {/* Cover image */}
       <Avatar
         size="md"
@@ -80,22 +77,12 @@ export function SearchResultRow({
       {/* Add button */}
       <div className="shrink-0">
         {isAddPending ? (
-          <Button
-            variant="ghost"
-            size="md"
-            isDisabled
-            aria-label={addButtonLabel}
-          >
+          <Button variant="ghost" size="md" isDisabled aria-label={addButtonLabel}>
             <Spinner size="sm" color="current" />
             Adding...
           </Button>
         ) : isAlreadyQueued ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            isDisabled
-            aria-label={addButtonLabel}
-          >
+          <Button variant="ghost" size="sm" isDisabled aria-label={addButtonLabel}>
             {voteCount} vote{voteCount !== 1 ? 's' : ''}
           </Button>
         ) : (

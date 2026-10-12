@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 import type { Party, Playback } from '../model/types'
 import {
   hasOtherPlaybackMaster,
@@ -88,7 +88,9 @@ describe('playbackMasterId', () => {
   })
 
   it('returns null when no master is designated (masterId is null)', () => {
-    expect(playbackMasterId(makeParty({ playback: { ...BASE_PLAYBACK, masterId: null } }))).toBeNull()
+    expect(
+      playbackMasterId(makeParty({ playback: { ...BASE_PLAYBACK, masterId: null } })),
+    ).toBeNull()
   })
 
   it('returns the masterId string when a master is designated', () => {
