@@ -14,6 +14,6 @@ bun run build:web
 
 `apps/web/vite.config.ts` holds the web tooling configuration. Checks include formatting, linting, and types. Tests use Vite+ with jsdom and Testing Library.
 
-The development server proxies `/api` to the Go API on port 8080. See the root README and `docs/setup/neon-auth.md` for configuration.
+The development server proxies `/api` to the Go API on port 8080. See the [root README](../../README.md) for environment setup and service configuration.
 
 Route types are generated before checks, tests, and builds. Run `bun run openapi:gen` from the root to regenerate API types after changing `apps/api/openapi.yaml`.

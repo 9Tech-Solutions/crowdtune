@@ -1,11 +1,14 @@
 # CrowdTune
 
-Social jukebox for restaurants and bars. Customers vote and pay to queue songs from their phones,
-integrated with food ordering and payments. Built by 9Tech Solutions Co., Ltd.
+Social jukebox for restaurants and bars. Hosts create listening parties, and guests join from their
+phones to view the queue and vote on tracks. Built by 9Tech Solutions Co., Ltd.
 
-> **Status: in development.** See [translation progress](docs/translation-progress.md).
-> The [clean-room workflow](docs/translation-workflow.md) uses the LGPL-licensed Festify reference
-> locally under `.reference/festify/`; reference source is never committed.
+[![CI](https://github.com/9Tech-Solutions/crowdtune/actions/workflows/ci.yml/badge.svg)](https://github.com/9Tech-Solutions/crowdtune/actions/workflows/ci.yml)
+
+**Status: in development.** The repository includes party creation, queue listing, voting, Neon Auth,
+Spotify account connection, and web screens for parties, sharing, settings, search, and TV mode.
+Playback control, track search, playlist management, payments, and food ordering are still in development
+or planned. This is not a production-ready service.
 
 ## Stack
 
@@ -16,56 +19,97 @@ integrated with food ordering and payments. Built by 9Tech Solutions Co., Ltd.
 | Backend | Go 1.27, Gin, pgx v5, sqlc, goose migrations |
 | Database | PostgreSQL on [Neon](https://neon.tech) |
 | Contract | OpenAPI 3.1 (`apps/api/openapi.yaml`) generates Go server stubs and TS client |
-| AI tooling | [code-review-graph](https://github.com/tirth8205/code-review-graph) MCP for context-efficient code review |
 
 ## Repo layout
 
 ```
 crowdtune/
-├── .claude/                   AI agents, rules, hooks, generated skills
-├── .mcp.json                  code-review-graph MCP registration
-├── .reference/                (gitignored) read-only Festify clone for translator agent
+├── .github/                   CI, contribution guide, security policy
 ├── apps/
 │   ├── web/                   React + Vite+ + Tailwind
 │   └── api/                   Go + Gin + pgx
 ├── infra/
 │   └── migrations/            goose SQL migrations
-├── docs/
-│   ├── pitch/                 product deck
-│   ├── specs/                 prose-only behavioral specs (translator output)
-│   └── CODEMAPS/              architecture maps
-├── AGENTS.md                  canonical working instructions
+├── AGENTS.md                  brief coding-agent instructions
+├── .env.example               environment variable template
+├── LICENSE.md                 source-available license
 ├── package.json               Bun workspace and commands
 └── bun.lock                   reproducible web dependencies
 ```
 
 ## Getting started
 
-Prerequisites: Bun 1.4.3+, Node 24.11+ (Vite+ CLI/tests), Go 1.27.2+, and Git.
-Pinned tool versions are in `.tool-versions`. Python and
-[code-review-graph](https://github.com/tirth8205/code-review-graph) are optional review tooling.
+Prerequisites: Bun 1.4.3+, Node 24.21 LTS (Vite+ CLI/tests), Go 1.27.2+, and Git.
+Pinned tool versions are in `.tool-versions`. Database-backed features need PostgreSQL and Neon Auth.
 
 ```bash
-# Install everything
+git clone https://github.com/9Tech-Solutions/crowdtune.git
+cd crowdtune
 bun install --frozen-lockfile
+cp .env.example .env
+```
 
-# Run frontend dev server
-bun run dev:web
+Edit `.env` before starting the application:
 
-# Check types, lint, and formatting; test and build
-bun run check:web
-bun run test:web
-bun run build:web
+| Setting | Purpose |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection used by the API |
+| `DATABASE_URL_DIRECT` | Direct PostgreSQL connection used for migrations |
+| `NEON_AUTH_JWKS_URL`, `NEON_AUTH_ISSUER`, `NEON_AUTH_AUDIENCE` | API bearer-token validation; use the values for your Neon Auth project |
+| `VITE_NEON_AUTH_URL` | Public Neon Auth endpoint used by the web application |
+| `VITE_API_URL` | Leave blank in development to use the Vite proxy; deployments can configure an API origin with the appropriate CORS policy |
+| `SPOTIFY_*` | Optional Spotify OAuth settings; all four must be configured to enable these endpoints |
 
-# Run backend with live reload
-cd apps/api && go run ./cmd/api
+Enable Neon Auth in your Neon project before applying migrations: they reference its `neon_auth` schema.
+Install the migration tool with `go install github.com/pressly/goose/v3/cmd/goose@latest`, then run this
+from the repository root with `DATABASE_URL_DIRECT` exported in your shell:
 
-# Database migrations against Neon (from the repo root)
-# Install goose and set DATABASE_URL_DIRECT first.
+```bash
 goose -dir infra/migrations postgres "$DATABASE_URL_DIRECT" up
 ```
 
+Run the API in one terminal:
+
+```bash
+cd apps/api
+go run ./cmd/api
+```
+
+Run the web application from the repository root in another terminal:
+
+```bash
+bun run dev:web
+```
+
+The web development server proxies `/api` to `http://localhost:8080`. Protected API routes are disabled
+when `NEON_AUTH_JWKS_URL` is unset. Never put server credentials in `VITE_` variables, which are public
+in the browser bundle.
+
+## Checks
+
+From the repository root:
+
+```bash
+bun run check:web
+bun run test:web
+bun run build:web
+```
+
+From `apps/api`:
+
+```bash
+go vet ./...
+go build ./...
+go test ./... -race -count=1
+```
+
+## Contributing
+
+See the [contribution guide](.github/CONTRIBUTING.md) for architecture conventions, generated files,
+and validation commands. See the [security policy](.github/SECURITY.md) for reporting vulnerabilities.
+
 ## License
 
-[Sustainable Use License v1.0](./LICENSE.md). Free for personal, internal-business, and non-commercial use.
+[Sustainable Use License v1.0](./LICENSE.md). This project is source-available, with restrictions on use
+and redistribution. See the license for its full terms, including branch-specific restrictions.
 Hosting CrowdTune as a paid service requires a separate commercial agreement with 9Tech Solutions.

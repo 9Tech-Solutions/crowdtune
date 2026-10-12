@@ -4,7 +4,7 @@ Postgres migrations managed by [goose](https://github.com/pressly/goose).
 
 ## Run
 
-Set `DATABASE_URL_DIRECT` in `.env` (use Neon's **direct** URL, not the pooler, for migrations):
+Configure the database as described in the [root README](../../README.md). Export `DATABASE_URL_DIRECT` in your shell before running these commands from the repository root. Use Neon's **direct** URL rather than the pooler; copying `.env` does not export shell variables.
 
 ```bash
 goose -dir infra/migrations postgres "$DATABASE_URL_DIRECT" status

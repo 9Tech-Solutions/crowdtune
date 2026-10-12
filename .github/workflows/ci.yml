@@ -10,18 +10,18 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  reference-check:
-    name: Block accidental Festify commit
+  publication-check:
+    name: Keep private maintainer files out of Git
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Fail if .reference/ contains tracked files
+      - name: Fail if private maintainer files are tracked
         run: |
           set -euo pipefail
-          tracked=$(git ls-files .reference/ | wc -l)
+          tracked=$(git ls-files -- docs .claude .mcp.json .code-review-graphignore .reference .reports .env | wc -l)
           if [ "$tracked" -ne 0 ]; then
-            echo "ERROR: $tracked file(s) tracked under .reference/. Festify reference must remain gitignored."
-            git ls-files .reference/
+            echo "ERROR: $tracked private maintainer file(s) are tracked. Keep these files local and gitignored."
+            git ls-files -- docs .claude .mcp.json .code-review-graphignore .reference .reports .env
             exit 1
           fi
   web:
