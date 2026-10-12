@@ -81,6 +81,12 @@ func main() {
 
 		// Vote casting/retracting (Phase 10c). Always-on; no env-var gating.
 		handlers.RegisterVotes(api, pool)
+		handlers.RegisterPlayback(api, pool)
+		musicConfig := handlers.MusicConfig{
+			AppleDeveloperToken: cfg.AppleMusicDeveloperToken,
+			AppleStorefront:     cfg.AppleMusicStorefront,
+			YouTubeAPIKey:       cfg.YouTubeAPIKey,
+		}
 
 		// Spotify OAuth (Phase 9). All four env vars must be non-empty.
 		// Log set/unset booleans; never log the values themselves.
@@ -104,11 +110,15 @@ func main() {
 					encKey,
 				)
 				handlers.RegisterSpotify(api, spotifyClient, pool)
+				musicConfig.Spotify = spotifyClient
+				musicConfig.SpotifyClientID = cfg.SpotifyClientID
+				musicConfig.SpotifyRedirectURI = cfg.SpotifyRedirectURI
 				logger.Info("spotify_enabled", "value", true)
 			}
 		} else {
 			logger.Info("spotify_enabled", "value", false)
 		}
+		handlers.RegisterMusic(api, pool, musicConfig)
 	}
 
 	srv := &http.Server{

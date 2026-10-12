@@ -10,6 +10,7 @@ import (
 
 	"github.com/9Tech-Solutions/crowdtune/apps/api/internal/auth"
 	"github.com/9Tech-Solutions/crowdtune/apps/api/internal/db/sqlc"
+	"github.com/9Tech-Solutions/crowdtune/apps/api/internal/music"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -42,7 +43,7 @@ type VoteStorer interface {
 // VoteOps is the transactional storage interface.
 // The production implementation is *sqlc.Queries wrapping a pgx.Tx.
 type VoteOps interface {
-	GetParty(ctx context.Context, id string) (sqlc.Party, error)
+	GetPartyForUpdate(ctx context.Context, id string) (sqlc.Party, error)
 	InsertVote(ctx context.Context, arg sqlc.InsertVoteParams) error
 	DeleteVote(ctx context.Context, arg sqlc.DeleteVoteParams) error
 	CountVotesForTrack(ctx context.Context, arg sqlc.CountVotesForTrackParams) (int32, error)
@@ -115,6 +116,10 @@ func (h *votesHandler) applyVote(c *gin.Context, delta int) {
 	partyID := c.Param("partyId")
 	provider := c.Param("provider")
 	providerTrackID := c.Param("trackId")
+	if !music.ValidReference(provider, providerTrackID) {
+		c.JSON(http.StatusBadRequest, gin.H{"code": "invalid_reference", "message": "Invalid music provider or track ID."})
+		return
+	}
 
 	// Fast-fail: check party existence outside the transaction to avoid an
 	// unnecessary transaction round-trip on a stale/wrong party ID.
@@ -203,7 +208,7 @@ func (h *votesHandler) attemptVote(
 	var outcome voteOutcome
 	err := h.store.InTx(ctx, func(ops VoteOps) error {
 		// Authoritative party check inside the transaction.
-		party, err := ops.GetParty(ctx, partyID)
+		party, err := ops.GetPartyForUpdate(ctx, partyID)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return errPartyNotFoundInTx

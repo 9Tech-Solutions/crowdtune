@@ -14,7 +14,6 @@
     "lint:web": "bun run --filter web lint",
     "typecheck:web": "bun run --filter web typecheck",
     "test:web": "bun run --filter web test",
-    "openapi:gen": "bun run --filter web openapi:gen",
     "check:web": "bun run --filter web check",
     "format:web": "bun run --filter web format"
   },

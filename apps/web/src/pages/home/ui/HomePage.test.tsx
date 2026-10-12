@@ -297,8 +297,8 @@ describe('lower button: not authenticated', () => {
 // "Connect Spotify to create Party" button.
 // ---------------------------------------------------------------------------
 
-describe('lower button: connect-spotify', () => {
-  it('shows Connect Spotify when authenticated but Spotify not Premium', async () => {
+describe('mixed-provider party creation', () => {
+  it('allows an authenticated host to create a party without Spotify Premium', async () => {
     mockUsePlaybackCompatible.mockReturnValue(true)
     mockUseSpotifyStatus.mockReturnValue({
       data: { isConnected: false, isPremium: false },
@@ -311,9 +311,7 @@ describe('lower button: connect-spotify', () => {
       email: 'alice@example.com',
     })
     renderPage()
-    expect(
-      await screen.findByRole('button', { name: /connect spotify to create party/i }),
-    ).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /^create party$/i })).toBeInTheDocument()
   })
 })
 
@@ -374,12 +372,12 @@ describe('lower button: create in progress', () => {
 // ---------------------------------------------------------------------------
 
 describe('browser incompatibility', () => {
-  it('hides all lower button variants when browser is not playback-compatible', () => {
+  it('keeps party creation available without Spotify browser compatibility', () => {
     mockUsePlaybackCompatible.mockReturnValue(false)
     renderPage()
     expect(screen.queryByRole('button', { name: /create party/i })).toBeNull()
     expect(screen.queryByRole('button', { name: /sign in to create party/i })).toBeNull()
-    expect(screen.queryByRole('button', { name: /checking/i })).toBeNull()
+    expect(screen.getByRole('button', { name: /checking/i })).toBeDisabled()
   })
 
   it('still renders the join form when browser is not compatible', () => {

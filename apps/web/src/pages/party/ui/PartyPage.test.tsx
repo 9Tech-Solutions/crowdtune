@@ -157,7 +157,12 @@ async function openSignInModal() {
 beforeEach(() => {
   vi.clearAllMocks()
   mockUsePartyQuery.mockReturnValue({ data: null, isLoading: false, error: null })
-  mockUsePartyQueueQuery.mockReturnValue({ tracks: [], isLoading: false, error: null })
+  mockUsePartyQueueQuery.mockReturnValue({
+    tracks: [],
+    metadataByKey: {},
+    isLoading: false,
+    error: null,
+  })
   mockUseVote.mockReturnValue({ mutate: vi.fn(), isPending: false } as unknown as ReturnType<
     typeof useVote
   >)
@@ -448,7 +453,12 @@ function makeTrack(id: string): Track {
 describe('queue tracks wire-up', () => {
   it('passes tracks from usePartyQueueQuery to PartyQueue', () => {
     const fakeTracks: Track[] = [makeTrack('a1'), makeTrack('b2'), makeTrack('c3')]
-    mockUsePartyQueueQuery.mockReturnValue({ tracks: fakeTracks, isLoading: false, error: null })
+    mockUsePartyQueueQuery.mockReturnValue({
+      tracks: fakeTracks,
+      metadataByKey: {},
+      isLoading: false,
+      error: null,
+    })
     mockUsePartyQuery.mockReturnValue({ data: makeParty(), isLoading: false, error: null })
     mockUseLocation.mockReturnValue({ pathname: '/party/test-party' } as ReturnType<
       typeof useLocation
@@ -463,7 +473,12 @@ describe('queue tracks wire-up', () => {
   })
 
   it('passes tracksLoaded=false to PartyQueue while usePartyQueueQuery is loading', () => {
-    mockUsePartyQueueQuery.mockReturnValue({ tracks: [], isLoading: true, error: null })
+    mockUsePartyQueueQuery.mockReturnValue({
+      tracks: [],
+      metadataByKey: {},
+      isLoading: true,
+      error: null,
+    })
     mockUsePartyQuery.mockReturnValue({ data: makeParty(), isLoading: false, error: null })
     mockUseLocation.mockReturnValue({ pathname: '/party/test-party' } as ReturnType<
       typeof useLocation

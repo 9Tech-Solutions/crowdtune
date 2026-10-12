@@ -73,6 +73,8 @@ func buildWiringRouter(t *testing.T) (*gin.Engine, func()) {
 	handlers.RegisterParties(api, nil)
 	handlers.RegisterQueue(api, nil)
 	handlers.RegisterVotes(api, nil)
+	handlers.RegisterPlayback(api, nil)
+	handlers.RegisterMusic(api, nil, handlers.MusicConfig{})
 	handlers.RegisterSpotify(api, nil, nil)
 
 	cleanup := func() { jwksSrv.Close() }
@@ -117,6 +119,12 @@ func TestWiring_AllProtectedEndpointsRequireBearer(t *testing.T) {
 		{http.MethodPut, "/api/parties/anycode/tracks/spotify/anytrack/vote"},
 		{http.MethodDelete, "/api/parties/anycode/tracks/spotify/anytrack/vote"},
 		{http.MethodPost, "/api/spotify/token"},
+		{http.MethodGet, "/api/music/config"},
+		{http.MethodGet, "/api/music/spotify/access-token"},
+		{http.MethodGet, "/api/parties/anycode/music/search"},
+		{http.MethodGet, "/api/parties/anycode/music/metadata"},
+		{http.MethodGet, "/api/parties/anycode/playback"},
+		{http.MethodPost, "/api/parties/anycode/playback"},
 	}
 
 	for _, ep := range endpoints {

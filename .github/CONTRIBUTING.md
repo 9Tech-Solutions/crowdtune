@@ -17,7 +17,7 @@ Add or update tests when behavior changes.
 
 ## Code conventions
 
-- Keep web imports flowing from app/pages through widgets/entities to shared code. Route files bind
+- Keep web imports flowing from app/pages through widgets/features/entities to shared code. Route files bind
   pages to TanStack Router; put behavior in the appropriate page, widget, or shared module.
 - Reuse HeroUI components. Use the shared API client for authenticated requests and keep bearer-token
   validation in the API's `internal/auth` package.
@@ -30,8 +30,9 @@ Add or update tests when behavior changes.
 
 ## Generated files
 
-Commit `bun.lock` and Go module files when dependencies change. Use `bun run openapi:gen` for web API
-types. Route types regenerate before web checks, tests, and builds; generated web files are ignored.
+Commit `bun.lock` and Go module files when dependencies change. Update the web's shared API client and
+entity models alongside the OpenAPI contract. Route types regenerate before web checks, tests, and builds;
+generated route files are ignored.
 Regenerate the committed Go API and SQL code with `make generate` from `apps/api`; install the
 `oapi-codegen` and `sqlc` tools listed in that app's README first.
 

@@ -21,11 +21,11 @@ vi.mock('@tanstack/react-router', () => ({
   useNavigate: vi.fn(() => vi.fn()),
 }))
 
-vi.mock('@/pages/party/api/use-party-query', () => ({
+vi.mock('@/entities/party/api/use-party-query', () => ({
   usePartyQuery: vi.fn(() => ({ data: null, isLoading: false, error: null })),
 }))
 
-vi.mock('@/pages/party/api/use-playback-query', () => ({
+vi.mock('@/entities/party/api/use-playback-query', () => ({
   usePlaybackQuery: vi.fn(() => ({ data: null, isLoading: false, error: null })),
 }))
 
@@ -48,7 +48,7 @@ vi.mock('@/widgets/playback-progress-bar', () => ({
 // ---------------------------------------------------------------------------
 
 import { PartyTvPage } from './PartyTvPage'
-import { usePartyQuery } from '@/pages/party/api/use-party-query'
+import { usePartyQuery } from '@/entities/party/api/use-party-query'
 import { useTvQueueQuery } from '../api/use-tv-queue-query'
 import { useNavigate } from '@tanstack/react-router'
 

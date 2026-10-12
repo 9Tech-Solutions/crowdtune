@@ -20,3 +20,6 @@ FROM user_votes
 WHERE party_id = @party_id
   AND provider = @provider
   AND provider_track_id = @provider_track_id;
+-- name: DeleteTrackVotes :exec
+DELETE FROM user_votes
+WHERE party_id = @party_id AND provider = @provider AND provider_track_id = @provider_track_id;

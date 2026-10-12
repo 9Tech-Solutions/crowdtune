@@ -15,7 +15,6 @@
 *.gz binary
 
 # Generated files - hide from diffs
-apps/web/src/api/types.ts linguist-generated=true -diff
 apps/api/internal/oapi/*.gen.go linguist-generated=true -diff
 bun.lock linguist-generated=true -diff
 go.sum linguist-generated=true -diff

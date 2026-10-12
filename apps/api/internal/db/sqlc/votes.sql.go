@@ -30,6 +30,22 @@ func (q *Queries) CountVotesForTrack(ctx context.Context, arg CountVotesForTrack
 	return vote_count, err
 }
 
+const deleteTrackVotes = `-- name: DeleteTrackVotes :exec
+DELETE FROM user_votes
+WHERE party_id = $1 AND provider = $2 AND provider_track_id = $3
+`
+
+type DeleteTrackVotesParams struct {
+	PartyID         string `json:"party_id"`
+	Provider        string `json:"provider"`
+	ProviderTrackID string `json:"provider_track_id"`
+}
+
+func (q *Queries) DeleteTrackVotes(ctx context.Context, arg DeleteTrackVotesParams) error {
+	_, err := q.db.Exec(ctx, deleteTrackVotes, arg.PartyID, arg.Provider, arg.ProviderTrackID)
+	return err
+}
+
 const deleteVote = `-- name: DeleteVote :exec
 DELETE FROM user_votes
 WHERE party_id = $1

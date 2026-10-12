@@ -93,9 +93,9 @@ describe('cover image', () => {
 // ---------------------------------------------------------------------------
 
 describe('null metadata fallback', () => {
-  it('shows "Loading track" text when metadata is null', () => {
+  it('shows the track link identity when catalog metadata is unavailable', () => {
     renderRow({ metadata: null })
-    expect(screen.getByText('Loading track')).toBeInTheDocument()
+    expect(screen.getByText('Track link: test-track-1')).toBeInTheDocument()
   })
 
   it('does not render an img when metadata is null', () => {

@@ -65,3 +65,38 @@ func (q *Queries) GetParty(ctx context.Context, id string) (Party, error) {
 	)
 	return i, err
 }
+
+const getPartyForUpdate = `-- name: GetPartyForUpdate :one
+SELECT id, host_user_id, name, settings, is_active, created_at, updated_at FROM parties WHERE id = $1 FOR UPDATE
+`
+
+func (q *Queries) GetPartyForUpdate(ctx context.Context, id string) (Party, error) {
+	row := q.db.QueryRow(ctx, getPartyForUpdate, id)
+	var i Party
+	err := row.Scan(
+		&i.ID,
+		&i.HostUserID,
+		&i.Name,
+		&i.Settings,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const setPartyPlayback = `-- name: SetPartyPlayback :exec
+UPDATE parties
+SET settings = jsonb_set(settings, '{playback}', $1::jsonb, true)
+WHERE id = $2
+`
+
+type SetPartyPlaybackParams struct {
+	Playback []byte `json:"playback"`
+	ID       string `json:"id"`
+}
+
+func (q *Queries) SetPartyPlayback(ctx context.Context, arg SetPartyPlaybackParams) error {
+	_, err := q.db.Exec(ctx, setPartyPlayback, arg.Playback, arg.ID)
+	return err
+}

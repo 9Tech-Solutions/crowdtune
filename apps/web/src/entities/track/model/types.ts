@@ -5,18 +5,17 @@
  * Conversion to Date or epoch ms happens at the API boundary, not here.
  */
 
-import type { Image } from '@/shared/model'
+import type { Image, MusicProvider } from '@/shared/model'
 
 /**
  * Pointer to a specific song in a specific streaming provider.
- * The provider union has one member now; adding providers is a deliberate
- * type change, which is the right friction to prevent accidental drift.
+ * Provider identity is retained throughout a mixed-service queue.
  */
 export type TrackReference = {
   /** Opaque string identifier assigned by the streaming provider. */
   id: string
-  /** Name of the streaming provider. Currently only 'spotify' is supported. */
-  provider: 'spotify'
+  /** Service that owns this track identifier. */
+  provider: MusicProvider
 }
 
 /**

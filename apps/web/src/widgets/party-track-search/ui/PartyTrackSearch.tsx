@@ -1,27 +1,12 @@
-/**
- * PartyTrackSearch widget.
- *
- * Mounts at /party/$partyId/search as a child of the party page shell.
- * Reads partyId from TanStack Router's useParams - no props accepted from
- * the route file.
- *
- * Auth gate note: for the first port the add button is enabled regardless of
- * auth state. The underlying useAddTrack mutation is a no-op placeholder.
- * When the real backend lands and the sign-in gate logic is confirmed, the
- * gate moves into the useAddTrack hook or a wrapper around it. The row
- * component does not check auth directly.
- *
- * Deferred concerns recorded in docs/translation-progress.md:
- * - useSearchTracks backend implementation
- * - useAddTrack backend implementation
- * - Pagination of search results (capped at 20 for first port)
- */
+/** Mixed-provider catalog search and track-link addition for the party search route. */
 import { useRef, useEffect, useState, useCallback } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useParams, useNavigate, useSearch } from '@tanstack/react-router'
-import { Input, Spinner } from '@heroui/react'
+import { Input, Spinner, Button } from '@heroui/react'
+import { MUSIC_PROVIDER_LABELS, isMusicProvider, type MusicProvider } from '@/shared/model'
 
 import type { TrackReference } from '@/entities/track'
-import { trackIdentityKey } from '@/entities/track'
+import { trackIdentityKey, fetchQueue } from '@/entities/track'
 
 import type { SearchResult } from '../api/useSearchTracks'
 import { useSearchTracks } from '../api/useSearchTracks'
@@ -51,6 +36,8 @@ export function PartyTrackSearch() {
   // Read the committed query from the URL (drives data fetching).
   const search = useSearch({ from: '/party/$partyId/search' })
   const committedQuery: string = ((search as Record<string, unknown>).q as string) ?? ''
+  const selectedProvider = (search as Record<string, unknown>).provider
+  const provider: MusicProvider = isMusicProvider(selectedProvider) ? selectedProvider : 'spotify'
 
   // Local input state: updates on every keystroke.
   const [localQuery, setLocalQuery] = useState<string>(committedQuery)
@@ -70,13 +57,26 @@ export function PartyTrackSearch() {
   // Already-added tracks: track identity key -> true. Stays visible with
   // "already queued" indicator per the lock-now decision (row persists).
   const [addedTracks, setAddedTracks] = useState<Record<string, boolean>>({})
+  const [addError, setAddError] = useState<string | null>(null)
 
-  // Placeholder queue snapshot (real data arrives from party shell's cache
-  // when the backend queue query is wired up).
+  // Reuse the party queue cache for already-queued and vote-count indicators.
+  const { data: queue } = useQuery({
+    queryKey: ['party-queue', partyId],
+    queryFn: () => fetchQueue(partyId),
+    staleTime: 3000,
+    refetchInterval: 3000,
+  })
   const queueSnapshot: QueueSnapshot = {}
+  for (const track of queue?.tracks ?? [])
+    queueSnapshot[trackIdentityKey(track)] = { voteCount: track.voteCount }
 
   // Data hooks.
-  const { data: results = [], isLoading, isError } = useSearchTracks(partyId, committedQuery)
+  const {
+    data: results = [],
+    isLoading,
+    isError,
+    error: searchError,
+  } = useSearchTracks(partyId, committedQuery, provider)
   const { mutate: addTrack } = useAddTrack(partyId)
 
   // ---------------------------------------------------------------------------
@@ -89,11 +89,11 @@ export function PartyTrackSearch() {
       void navigate({
         to: '/party/$partyId/search',
         params: { partyId },
-        search: { q: trimmed || undefined },
+        search: { q: trimmed || undefined, provider },
         replace: true,
       })
     },
-    [navigate, partyId],
+    [navigate, partyId, provider],
   )
 
   // ---------------------------------------------------------------------------
@@ -143,7 +143,7 @@ export function PartyTrackSearch() {
       void navigate({
         to: '/party/$partyId/search',
         params: { partyId },
-        search: { q: undefined },
+        search: { q: undefined, provider },
         replace: true,
       })
       inputRef.current?.focus()
@@ -155,6 +155,7 @@ export function PartyTrackSearch() {
   // ---------------------------------------------------------------------------
 
   function handleAdd(ref: TrackReference) {
+    setAddError(null)
     const key = trackIdentityKey(ref)
     setPendingTracks((prev) => ({ ...prev, [key]: true }))
 
@@ -168,11 +169,9 @@ export function PartyTrackSearch() {
           liveRef.current.textContent = `${title} added to queue.`
         }
       },
-      onError: () => {
+      onError: (reason) => {
         setPendingTracks((prev) => ({ ...prev, [key]: false }))
-        console.warn(
-          '[PartyTrackSearch] Failed to add track. Retry or show toast when toast API is wired.',
-        )
+        setAddError(reason.message || 'Could not add the track. Sign in and try again.')
       },
     })
   }
@@ -203,7 +202,7 @@ export function PartyTrackSearch() {
     if (isError) {
       return (
         <p className="text-center text-sm text-danger px-4 py-8">
-          Search is unavailable right now. Please try again.
+          {searchError?.message ?? 'Search is unavailable right now. Please try again.'}
         </p>
       )
     }
@@ -246,6 +245,31 @@ export function PartyTrackSearch() {
     <div className="flex flex-col gap-4 pt-4">
       {/* Hidden live region for screen reader announcements */}
       <div ref={liveRef} aria-live="polite" aria-atomic="true" className="sr-only" />
+      <fieldset className="px-4 flex flex-wrap gap-2">
+        <legend className="text-sm mb-2">Music service</legend>
+        {(Object.keys(MUSIC_PROVIDER_LABELS) as MusicProvider[]).map((service) => (
+          <Button
+            key={service}
+            variant={service === provider ? 'primary' : 'secondary'}
+            aria-pressed={service === provider}
+            onPress={() => {
+              void navigate({
+                to: '/party/$partyId/search',
+                params: { partyId },
+                search: { q: committedQuery || undefined, provider: service },
+                replace: true,
+              })
+            }}
+          >
+            {MUSIC_PROVIDER_LABELS[service]}
+          </Button>
+        ))}
+      </fieldset>
+      {addError && (
+        <p role="alert" className="text-danger px-4">
+          {addError}
+        </p>
+      )}
 
       {/* Search input */}
       <div className="px-4">

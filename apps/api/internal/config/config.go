@@ -21,10 +21,13 @@ type Config struct {
 
 	// Spotify OAuth (Phase 9). All optional; if any is unset, the Spotify
 	// endpoints are disabled and spotify_enabled=false is logged at startup.
-	SpotifyClientID     string `env:"SPOTIFY_CLIENT_ID"`
-	SpotifyClientSecret string `env:"SPOTIFY_CLIENT_SECRET"`
-	SpotifyTokenEncKey  string `env:"SPOTIFY_TOKEN_ENC_KEY"`
-	SpotifyRedirectURI  string `env:"SPOTIFY_REDIRECT_URI"`
+	SpotifyClientID          string `env:"SPOTIFY_CLIENT_ID"`
+	SpotifyClientSecret      string `env:"SPOTIFY_CLIENT_SECRET"`
+	SpotifyTokenEncKey       string `env:"SPOTIFY_TOKEN_ENC_KEY"`
+	SpotifyRedirectURI       string `env:"SPOTIFY_REDIRECT_URI"`
+	AppleMusicDeveloperToken string `env:"APPLE_MUSIC_DEVELOPER_TOKEN"`
+	AppleMusicStorefront     string `env:"APPLE_MUSIC_STOREFRONT" envDefault:"us"`
+	YouTubeAPIKey            string `env:"YOUTUBE_API_KEY"`
 }
 
 func Load() (*Config, error) {

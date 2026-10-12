@@ -3,11 +3,8 @@ import { useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { Card, Input, Button, Spinner } from '@heroui/react'
 import { getSession } from '@/shared/auth'
-import type { SessionUser } from '@/shared/auth'
 import { useJoinParty } from '../model/use-join-party'
 import { useCreateParty } from '../model/use-create-party'
-import { useSpotifyStatus } from '../model/use-spotify-status'
-import { usePlaybackCompatible } from '@/shared/lib/use-playback-compatible'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -15,7 +12,7 @@ import { usePlaybackCompatible } from '@/shared/lib/use-playback-compatible'
 
 type JoinError = 'not-found' | 'expired' | 'at-capacity' | 'network'
 
-type LowerButtonState = 'creating' | 'create' | 'checking' | 'sign-in' | 'connect-spotify'
+type LowerButtonState = 'creating' | 'create' | 'checking' | 'sign-in'
 
 // ---------------------------------------------------------------------------
 // Error messages (CrowdTune-original copy)
@@ -45,11 +42,10 @@ function toJoinError(err: unknown): JoinError {
 type LowerButtonProps = {
   state: LowerButtonState
   onSignIn: () => void
-  onConnectSpotify: () => void
   onCreateParty: () => void
 }
 
-function LowerButton({ state, onSignIn, onConnectSpotify, onCreateParty }: LowerButtonProps) {
+function LowerButton({ state, onSignIn, onCreateParty }: LowerButtonProps) {
   if (state === 'creating') {
     return (
       <Button variant="primary" size="lg" isDisabled className="w-full">
@@ -75,14 +71,6 @@ function LowerButton({ state, onSignIn, onConnectSpotify, onCreateParty }: Lower
     )
   }
 
-  if (state === 'connect-spotify') {
-    return (
-      <Button variant="secondary" size="lg" onPress={onConnectSpotify} className="w-full">
-        Connect Spotify to create Party
-      </Button>
-    )
-  }
-
   // state === 'sign-in'
   return (
     <Button variant="secondary" size="lg" onPress={onSignIn} className="w-full">
@@ -97,15 +85,11 @@ function LowerButton({ state, onSignIn, onConnectSpotify, onCreateParty }: Lower
 
 type AuthState = 'unknown' | 'authenticated' | 'unauthenticated'
 
-function deriveLowerButtonState(
-  authState: AuthState,
-  isPremium: boolean,
-  isCreating: boolean,
-): LowerButtonState {
+function deriveLowerButtonState(authState: AuthState, isCreating: boolean): LowerButtonState {
   if (isCreating) return 'creating'
-  if (authState === 'authenticated' && isPremium) return 'create'
+  if (authState === 'authenticated') return 'create'
   if (authState === 'unknown') return 'checking'
-  return authState === 'authenticated' ? 'connect-spotify' : 'sign-in'
+  return 'sign-in'
 }
 
 // ---------------------------------------------------------------------------
@@ -117,8 +101,6 @@ export function HomePage() {
   const [partyCode, setPartyCode] = useState('')
   const [joinError, setJoinError] = useState<JoinError | null>(null)
   const [createError, setCreateError] = useState<string | null>(null)
-
-  const isPlaybackCompatible = usePlaybackCompatible()
 
   const joinMutation = useJoinParty()
   const createMutation = useCreateParty()
@@ -154,11 +136,6 @@ export function HomePage() {
     void navigate({ to: '/auth/$', search: { redirectTo: '/' } })
   }
 
-  function handleConnectSpotify() {
-    // Spotify OAuth initiation is deferred to Phase 9b.2.
-    // This callback shape is wired; the real redirect will replace this body.
-  }
-
   function handleCreateParty() {
     // Spec invariant: only one of join / create can be in flight at a time.
     if (createMutation.isPending || joinMutation.isPending) return
@@ -185,13 +162,7 @@ export function HomePage() {
       ? 'authenticated'
       : 'unauthenticated'
 
-  // userId derived from the session already loaded above — no second fetch.
-  const userId = (sessionQuery.data as SessionUser | null | undefined)?.id
-  const { data: spotifyData } = useSpotifyStatus(userId)
-  // silent fallback; toast system pending
-  const { isPremium } = spotifyData ?? { isPremium: false }
-
-  const lowerButtonState = deriveLowerButtonState(authState, isPremium, createMutation.isPending)
+  const lowerButtonState = deriveLowerButtonState(authState, createMutation.isPending)
 
   const isJoining = joinMutation.isPending
   const isCreating = createMutation.isPending
@@ -238,18 +209,15 @@ export function HomePage() {
             )}
           </div>
 
-          {isPlaybackCompatible && (
-            <div className="flex flex-col gap-2 w-full">
-              <LowerButton
-                state={lowerButtonState}
-                onSignIn={handleSignIn}
-                onConnectSpotify={handleConnectSpotify}
-                onCreateParty={handleCreateParty}
-              />
+          <div className="flex flex-col gap-2 w-full">
+            <LowerButton
+              state={lowerButtonState}
+              onSignIn={handleSignIn}
+              onCreateParty={handleCreateParty}
+            />
 
-              {createError && <p className="text-sm text-red-500 text-center">{createError}</p>}
-            </div>
-          )}
+            {createError && <p className="text-sm text-red-500 text-center">{createError}</p>}
+          </div>
         </Card.Content>
       </Card>
     </main>

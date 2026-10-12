@@ -368,6 +368,105 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/music/config:
+    get:
+      operationId: getMusicConfig
+      summary: Get enabled music services and public SDK configuration
+      responses:
+        '200':
+          description: Music configuration (no client secrets or YouTube API key)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MusicConfig'
+  /api/music/spotify/access-token:
+    get:
+      operationId: getSpotifyAccessToken
+      summary: Get or refresh the authenticated user's Spotify access token
+      responses:
+        '200':
+          description: Access token for the user's browser player; never the refresh token
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accessToken, expiresIn]
+                properties:
+                  accessToken: {type: string}
+                  expiresIn: {type: integer}
+        '409':
+          description: Spotify is not connected or configured
+  /api/parties/{partyId}/music/search:
+    get:
+      operationId: searchMusic
+      summary: Search a music catalog using the host's provider connection
+      parameters:
+        - {name: partyId, in: path, required: true, schema: {type: string}}
+        - {name: provider, in: query, required: true, schema: {$ref: '#/components/schemas/MusicProvider'}}
+        - {name: q, in: query, required: true, schema: {type: string, minLength: 1, maxLength: 200}}
+      responses:
+        '200':
+          description: Matching tracks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MusicSearchResult'
+        '409':
+          description: The host must connect Spotify
+        '503':
+          description: Catalog credentials are not configured; use track links
+  /api/parties/{partyId}/music/metadata:
+    get:
+      operationId: getMusicMetadata
+      summary: Get provider metadata for a single track
+      parameters:
+        - {name: partyId, in: path, required: true, schema: {type: string}}
+        - {name: provider, in: query, required: true, schema: {$ref: '#/components/schemas/MusicProvider'}}
+        - {name: id, in: query, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Track metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MusicMetadata'
+        '503':
+          description: Catalog credentials are not configured
+  /api/parties/{partyId}/playback:
+    parameters:
+      - {name: partyId, in: path, required: true, schema: {type: string}}
+    get:
+      operationId: getPartyPlayback
+      summary: Read live playback state (null when the player lease expires)
+      responses:
+        '200':
+          description: Current host player state or null
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NullablePlaybackState'
+    post:
+      operationId: controlPartyPlayback
+      summary: Claim, report, skip, remove, or release playback (host only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaybackCommand'
+      responses:
+        '200':
+          description: Updated playback state or null
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NullablePlaybackState'
+        '403':
+          description: Only the party host can control playback
+        '409':
+          description: Another player owns the lease or the current track changed
 components:
   securitySchemes:
     bearerAuth:
@@ -487,11 +586,88 @@ components:
       required: [provider, id]
       properties:
         provider:
-          type: string
-          description: Music provider identifier (e.g. "spotify")
+          $ref: '#/components/schemas/MusicProvider'
         id:
           type: string
           description: Provider-specific track identifier
+    MusicProvider:
+      type: string
+      enum: [spotify, youtube, apple-music]
+    MusicConfig:
+      type: object
+      required: [spotify, appleMusic, youtube]
+      properties:
+        spotify:
+          type: object
+          required: [configured, clientId, redirectUri]
+          properties:
+            configured: {type: boolean}
+            clientId: {type: string}
+            redirectUri: {type: string}
+        appleMusic:
+          type: object
+          required: [configured, developerToken]
+          properties:
+            configured: {type: boolean}
+            developerToken: {type: string}
+        youtube:
+          type: object
+          required: [configured, searchConfigured]
+          properties:
+            configured: {type: boolean}
+            searchConfigured: {type: boolean}
+    MusicSearchResult:
+      type: object
+      required: [trackRef, metadata]
+      properties:
+        trackRef: {$ref: '#/components/schemas/TrackReference'}
+        metadata: {$ref: '#/components/schemas/MusicMetadata'}
+    MusicMetadata:
+      type: object
+      required: [title, artists, coverImages, durationMs, isPlayable]
+      properties:
+        title: {type: string}
+        artists: {type: array, items: {type: string}}
+        durationMs: {type: integer, minimum: 0}
+        isPlayable: {type: boolean}
+        coverImages:
+          type: array
+          items:
+            type: object
+            required: [url, width, height]
+            properties:
+              url: {type: string}
+              width: {type: integer}
+              height: {type: integer}
+    PlaybackState: &playback-state
+      type: object
+      required: [lastChange, lastPositionMs, masterId, playing, targetPlaying, reference]
+      properties:
+        lastChange: {type: string, format: date-time}
+        lastPositionMs: {type: integer, minimum: 0}
+        masterId: {type: string}
+        playing: {type: boolean}
+        targetPlaying: {type: 'null', x-go-type: 'interface{}'}
+        reference:
+          x-go-type: '*TrackReference'
+          oneOf:
+            - {$ref: '#/components/schemas/TrackReference'}
+            - {type: 'null'}
+    # Keep the JSON null contract while mapping to the existing Go struct;
+    # oapi-codegen v2.7 cannot generate a oneOf containing the null type.
+    NullablePlaybackState:
+      <<: *playback-state
+      type: [object, 'null']
+      x-go-type: PlaybackState
+    PlaybackCommand:
+      type: object
+      required: [action, masterId]
+      properties:
+        action: {type: string, enum: [claim, state, advance, remove, release]}
+        masterId: {type: string, minLength: 1, maxLength: 128}
+        reference: {$ref: '#/components/schemas/TrackReference'}
+        positionMs: {type: integer, minimum: 0, maximum: 86400000}
+        playing: {type: boolean}
     SpotifyStatus:
       type: object
       required: [isConnected, isPremium]

@@ -104,6 +104,10 @@ func (f *fakeVotesStore) InTx(ctx context.Context, fn func(ops VoteOps) error) e
 }
 
 // VoteOps transactional methods
+func (f *fakeVotesStore) GetPartyForUpdate(ctx context.Context, id string) (sqlc.Party, error) {
+	return f.GetParty(ctx, id)
+}
+
 func (f *fakeVotesStore) InsertVote(_ context.Context, arg sqlc.InsertVoteParams) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()

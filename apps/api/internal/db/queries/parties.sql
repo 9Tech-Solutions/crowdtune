@@ -10,3 +10,11 @@ RETURNING *;
 
 -- name: GetParty :one
 SELECT * FROM parties WHERE id = @id;
+
+-- name: GetPartyForUpdate :one
+SELECT * FROM parties WHERE id = @id FOR UPDATE;
+
+-- name: SetPartyPlayback :exec
+UPDATE parties
+SET settings = jsonb_set(settings, '{playback}', sqlc.arg(playback)::jsonb, true)
+WHERE id = @id;

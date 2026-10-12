@@ -4,6 +4,12 @@ import { describe, it, expect, vi, beforeEach } from 'vite-plus/test'
 
 import type { Metadata, TrackReference } from '@/entities/track'
 import { TestQueryProvider } from '@/shared/test/test-providers'
+import { fetchQueue } from '@/entities/track'
+
+vi.mock('@/entities/track/api/queue', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/track/api/queue')>()),
+  fetchQueue: vi.fn(async () => ({ tracks: [], metadataByKey: {} })),
+}))
 
 // ---------------------------------------------------------------------------
 // Module mocks (hoisted by Vitest before imports)
@@ -89,6 +95,7 @@ function getInput() {
 
 describe('initial render (idle)', () => {
   beforeEach(() => {
+    vi.mocked(fetchQueue).mockResolvedValue({ tracks: [], metadataByKey: {} })
     mockSearchParams = {}
     setSearch({ data: [], isLoading: false, isError: false, error: null })
   })
@@ -137,7 +144,7 @@ describe('typing behavior', () => {
       // No time has passed - debounce has not fired
       expect(mockNavigate).not.toHaveBeenCalled()
     } finally {
-      vi.runAllTimers()
+      vi.clearAllTimers()
       vi.useRealTimers()
     }
   })
@@ -171,7 +178,7 @@ describe('debounce', () => {
         }),
       )
     } finally {
-      vi.runAllTimers()
+      vi.clearAllTimers()
       vi.useRealTimers()
     }
   })
@@ -207,7 +214,7 @@ describe('Enter key', () => {
         }),
       )
     } finally {
-      vi.runAllTimers()
+      vi.clearAllTimers()
       vi.useRealTimers()
     }
   })
@@ -357,7 +364,7 @@ describe('error state', () => {
     mockSearchParams = { q: 'errored query' }
     setSearch({ data: undefined, isLoading: false, isError: true, error: new Error('Net') })
     renderWidget()
-    expect(screen.getByText(/search is unavailable right now/i)).toBeInTheDocument()
+    expect(screen.getByText('Net')).toBeInTheDocument()
     mockSearchParams = {}
     setSearch({ data: [], isLoading: false, isError: false, error: null })
   })

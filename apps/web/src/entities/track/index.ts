@@ -1,4 +1,8 @@
 export type { Track, TrackReference, Metadata } from './model/types'
+export { adaptQueue, fetchQueue } from './api/queue'
+export { useTrackMetadata } from './api/use-track-metadata'
+export type { BackendQueueTrack } from './api/queue'
+export { parseTrackLink } from './lib/reference'
 export { trackIdentityKey, tracksAreEqual } from './lib/identity'
 export { sortedQueue, currentTrack, currentTrackKey } from './lib/queue'
 export { formatArtists, voteStatusLabel } from './lib/labels'

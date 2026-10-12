@@ -37,7 +37,7 @@ export function SearchResultRow({
   const artistString = formatArtists(metadata)
   const coverUrl = metadata ? pickCoverUrl(metadata.coverImages, 54) : undefined
 
-  const displayTitle = title ?? 'Loading track'
+  const displayTitle = title ?? `Track link: ${trackRef.id}`
   const displayArtist = artistString ?? ''
 
   const addButtonLabel = isAddPending
@@ -49,7 +49,7 @@ export function SearchResultRow({
   const rowAriaLabel =
     metadata != null
       ? `${displayTitle}${displayArtist ? ` by ${displayArtist}` : ''}`
-      : 'Loading track'
+      : displayTitle
 
   return (
     <div className="flex items-center gap-3 px-4 py-2" aria-label={rowAriaLabel}>

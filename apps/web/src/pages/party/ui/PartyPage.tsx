@@ -6,8 +6,11 @@ import { Spinner, Button, Modal } from '@heroui/react'
 import { QueueDrawer, QueueNav } from '@/widgets/queue-drawer'
 import { PartyQueue } from '@/widgets/party-queue'
 import { PlaybackProgressBar } from '@/widgets/playback-progress-bar'
+import { MusicPlayer } from '@/widgets/music-player'
+import { useMusicPlayback } from '@/features/music-playback'
 import { getSession, signInWithSocial, type SessionUser } from '@/shared/auth'
 import type { TrackReference } from '@/entities/track'
+import { useTrackMetadata, trackIdentityKey } from '@/entities/track'
 import { usePartyQuery } from '../api/use-party-query'
 import { usePlaybackQuery } from '../api/use-playback-query'
 import { usePartyQueueQuery } from '../api/use-party-queue-query'
@@ -82,6 +85,11 @@ export function PartyPage() {
   const username = user?.name ?? user?.email ?? null
   const currentUserId = user?.id ?? null
   const isOwner = party !== null && currentUserId !== null && party.hostUserId === currentUserId
+  const currentSubView = useSubView(partyId)
+  const player = useMusicPlayback(partyId, isOwner && currentSubView !== 'tv')
+  const metadata = useTrackMetadata(partyId, tracks)
+  const current = tracks[0]?.ref ?? null
+  const durationMs = tracks[0] ? (metadata[trackIdentityKey(tracks[0])]?.durationMs ?? null) : null
 
   // ---- Page-local UI state --------------------------------------------------
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
@@ -90,7 +98,6 @@ export function PartyPage() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
 
   // ---- Sub-view from router -------------------------------------------------
-  const currentSubView = useSubView(partyId)
 
   // ---- Path builders (type-safe strings, not hardcoded) --------------------
   const queuePath = `/party/${partyId}`
@@ -123,11 +130,11 @@ export function PartyPage() {
   }
 
   // ---- No-op callbacks (feature layer not yet ported) ----------------------
-  const onRemove = () => {
-    /* feature layer not yet ported */
+  const onRemove = (reference: TrackReference) => {
+    void player.remove(reference)
   }
   const onTogglePlayback = () => {
-    /* feature layer not yet ported */
+    if (current) void player.toggle(current)
   }
   const onTransferPlayback = () => {
     /* feature layer not yet ported */
@@ -248,11 +255,14 @@ export function PartyPage() {
             with the per-track metadata query when the backend lands. For now
             the widget receives null and renders an invisible 0% strip,
             preserving the 1px layout reservation. */}
-        <PlaybackProgressBar playback={playback} durationMs={null} />
+        <PlaybackProgressBar playback={playback} durationMs={durationMs} />
       </header>
 
       {/* Main content: top offset accounts for fixed header height */}
       <main className="flex-1 pt-[var(--party-header-height,4.5rem)] md:pl-72">
+        {isOwner && (
+          <MusicPlayer key={partyId} partyId={partyId} trackReference={current} {...player} />
+        )}
         {partyLoading ? (
           <div className="flex justify-center py-12">
             <Spinner size="lg" />
@@ -263,7 +273,7 @@ export function PartyPage() {
             isOwner={isOwner}
             settingsRoutePath={settingsPath}
             tracks={tracks}
-            metadata={{}}
+            metadata={metadata}
             playback={playback}
             votes={{}}
             pendingVotes={{}}
@@ -271,9 +281,9 @@ export function PartyPage() {
             hasOtherPlaybackMaster={false}
             hasConnectedSpotify={false}
             isCompatible={false}
-            isMusicPlaying={playback?.playing ?? false}
-            isTogglingPlayback={false}
-            isPlayButtonEnabled={false}
+            isMusicPlaying={player.isPlaying}
+            isTogglingPlayback={player.isBusy}
+            isPlayButtonEnabled={isOwner && current !== null}
             onVote={onVote}
             onRemove={onRemove}
             onTogglePlayback={onTogglePlayback}

@@ -14,6 +14,7 @@ migrations, and starting the application.
 - `internal/db/sqlc`: committed generated database code.
 - `internal/oapi`: committed generated API code.
 - `internal/spotify` and `internal/tokencrypto`: Spotify credentials and token encryption.
+- `internal/music`: provider catalog clients and metadata mapping.
 - `openapi.yaml`: API contract.
 
 ## Development
@@ -42,5 +43,4 @@ Follow the [contribution guide](../../.github/CONTRIBUTING.md):
 
 Generation requires `oapi-codegen` and `sqlc` on PATH. Install the former with
 `go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest`; obtain sqlc from its
-[official releases](https://github.com/sqlc-dev/sqlc/releases). Generated Go files are committed;
-generated web API types are ignored and can be regenerated with `bun run openapi:gen` from the root.
+[official releases](https://github.com/sqlc-dev/sqlc/releases). Generated Go files are committed.

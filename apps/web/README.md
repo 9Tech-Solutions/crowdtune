@@ -16,4 +16,11 @@ bun run build:web
 
 The development server proxies `/api` to the Go API on port 8080. See the [root README](../../README.md) for environment setup and service configuration.
 
-Route types are generated before checks, tests, and builds. Run `bun run openapi:gen` from the root to regenerate API types after changing `apps/api/openapi.yaml`.
+Route types are generated before checks, tests, and builds. API requests use the shared client and
+entity models; update them alongside `apps/api/openapi.yaml` when changing the contract.
+
+The web app uses Feature-Sliced Design. `shared/api` contains the technical SDK clients; `entities/track`
+owns track identity, link parsing, metadata, and queue adapters. `features/connect-music` owns Spotify
+authorization and `features/music-playback` owns host playback transitions. `widgets/music-player` and
+`widgets/party-track-search` compose those pieces; pages coordinate them and routes stay thin. Shared
+party/playback queries live in `entities/party`, so TV and party pages do not import each other.

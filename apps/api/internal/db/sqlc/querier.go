@@ -17,8 +17,10 @@ type Querier interface {
 	CreateParty(ctx context.Context, arg CreatePartyParams) (Party, error)
 	DeleteQueueTrack(ctx context.Context, arg DeleteQueueTrackParams) error
 	DeleteSpotifyCredentialsByUserID(ctx context.Context, userID string) error
+	DeleteTrackVotes(ctx context.Context, arg DeleteTrackVotesParams) error
 	DeleteVote(ctx context.Context, arg DeleteVoteParams) error
 	GetParty(ctx context.Context, id string) (Party, error)
+	GetPartyForUpdate(ctx context.Context, id string) (Party, error)
 	GetSpotifyCredentialsByUserID(ctx context.Context, userID string) (SpotifyCredential, error)
 	GetTopmostTrack(ctx context.Context, partyID string) (QueueTrack, error)
 	GetTrackForUpdate(ctx context.Context, arg GetTrackForUpdateParams) (QueueTrack, error)
@@ -33,6 +35,7 @@ type Querier interface {
 	// One row per unique (party_id, provider, provider_track_id) combination.
 	// order_idx drives the playback queue order; tiebreaker is added_at ASC.
 	ListQueueTracksByParty(ctx context.Context, partyID string) ([]QueueTrack, error)
+	SetPartyPlayback(ctx context.Context, arg SetPartyPlaybackParams) error
 	UpdateQueueTrack(ctx context.Context, arg UpdateQueueTrackParams) (QueueTrack, error)
 	// Spotify credentials queries.
 	// Table: spotify_credentials (created by infra/migrations/20260510191527_add_spotify_credentials.sql)

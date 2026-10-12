@@ -59,6 +59,54 @@ func (e HealthResponseStatus) Valid() bool {
 	}
 }
 
+// Defines values for MusicProvider.
+const (
+	AppleMusic MusicProvider = "apple-music"
+	Spotify    MusicProvider = "spotify"
+	Youtube    MusicProvider = "youtube"
+)
+
+// Valid indicates whether the value is a known member of the MusicProvider enum.
+func (e MusicProvider) Valid() bool {
+	switch e {
+	case AppleMusic:
+		return true
+	case Spotify:
+		return true
+	case Youtube:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PlaybackCommandAction.
+const (
+	Advance PlaybackCommandAction = "advance"
+	Claim   PlaybackCommandAction = "claim"
+	Release PlaybackCommandAction = "release"
+	Remove  PlaybackCommandAction = "remove"
+	State   PlaybackCommandAction = "state"
+)
+
+// Valid indicates whether the value is a known member of the PlaybackCommandAction enum.
+func (e PlaybackCommandAction) Valid() bool {
+	switch e {
+	case Advance:
+		return true
+	case Claim:
+		return true
+	case Release:
+		return true
+	case Remove:
+		return true
+	case State:
+		return true
+	default:
+		return false
+	}
+}
+
 // CreatePartyRequest defines model for CreatePartyRequest.
 type CreatePartyRequest struct {
 	// Name Display name for the party (non-empty, whitespace-trimmed)
@@ -107,6 +155,48 @@ type MeResponse struct {
 	UserId string `json:"user_id"`
 }
 
+// MusicConfig defines model for MusicConfig.
+type MusicConfig struct {
+	AppleMusic struct {
+		Configured     bool   `json:"configured"`
+		DeveloperToken string `json:"developerToken"`
+	} `json:"appleMusic"`
+	Spotify struct {
+		ClientId    string `json:"clientId"`
+		Configured  bool   `json:"configured"`
+		RedirectUri string `json:"redirectUri"`
+	} `json:"spotify"`
+	Youtube struct {
+		Configured       bool `json:"configured"`
+		SearchConfigured bool `json:"searchConfigured"`
+	} `json:"youtube"`
+}
+
+// MusicMetadata defines model for MusicMetadata.
+type MusicMetadata struct {
+	Artists     []string `json:"artists"`
+	CoverImages []struct {
+		Height int    `json:"height"`
+		Url    string `json:"url"`
+		Width  int    `json:"width"`
+	} `json:"coverImages"`
+	DurationMs int    `json:"durationMs"`
+	IsPlayable bool   `json:"isPlayable"`
+	Title      string `json:"title"`
+}
+
+// MusicProvider defines model for MusicProvider.
+type MusicProvider string
+
+// MusicSearchResult defines model for MusicSearchResult.
+type MusicSearchResult struct {
+	Metadata MusicMetadata  `json:"metadata"`
+	TrackRef TrackReference `json:"trackRef"`
+}
+
+// NullablePlaybackState defines model for NullablePlaybackState.
+type NullablePlaybackState = PlaybackState
+
 // Party defines model for Party.
 type Party struct {
 	// CreatedAt ISO 8601 creation timestamp
@@ -132,6 +222,28 @@ type Party struct {
 
 	// UpdatedAt ISO 8601 last-updated timestamp
 	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// PlaybackCommand defines model for PlaybackCommand.
+type PlaybackCommand struct {
+	Action     PlaybackCommandAction `json:"action"`
+	MasterId   string                `json:"masterId"`
+	Playing    *bool                 `json:"playing,omitempty"`
+	PositionMs *int                  `json:"positionMs,omitempty"`
+	Reference  *TrackReference       `json:"reference,omitempty"`
+}
+
+// PlaybackCommandAction defines model for PlaybackCommand.Action.
+type PlaybackCommandAction string
+
+// PlaybackState defines model for PlaybackState.
+type PlaybackState struct {
+	LastChange     time.Time       `json:"lastChange"`
+	LastPositionMs int             `json:"lastPositionMs"`
+	MasterId       string          `json:"masterId"`
+	Playing        bool            `json:"playing"`
+	Reference      *TrackReference `json:"reference"`
+	TargetPlaying  interface{}     `json:"targetPlaying"`
 }
 
 // QueueTrack defines model for QueueTrack.
@@ -183,17 +295,30 @@ type SpotifyTokenExchangeResponse struct {
 // TrackReference defines model for TrackReference.
 type TrackReference struct {
 	// Id Provider-specific track identifier
-	Id string `json:"id"`
-
-	// Provider Music provider identifier (e.g. "spotify")
-	Provider string `json:"provider"`
+	Id       string        `json:"id"`
+	Provider MusicProvider `json:"provider"`
 }
 
 // bearerAuthContextKey is the context key for bearerAuth security scheme
 type bearerAuthContextKey string
 
+// GetMusicMetadataParams defines parameters for GetMusicMetadata.
+type GetMusicMetadataParams struct {
+	Provider MusicProvider `form:"provider" json:"provider"`
+	Id       string        `form:"id" json:"id"`
+}
+
+// SearchMusicParams defines parameters for SearchMusic.
+type SearchMusicParams struct {
+	Provider MusicProvider `form:"provider" json:"provider"`
+	Q        string        `form:"q" json:"q"`
+}
+
 // CreatePartyJSONRequestBody defines body for CreateParty for application/json ContentType.
 type CreatePartyJSONRequestBody = CreatePartyRequest
+
+// ControlPartyPlaybackJSONRequestBody defines body for ControlPartyPlayback for application/json ContentType.
+type ControlPartyPlaybackJSONRequestBody = PlaybackCommand
 
 // PostSpotifyTokenJSONRequestBody defines body for PostSpotifyToken for application/json ContentType.
 type PostSpotifyTokenJSONRequestBody = SpotifyTokenExchangeRequest
@@ -203,12 +328,30 @@ type ServerInterface interface {
 	// Return the authenticated user's identity claims
 	// (GET /api/me)
 	GetMe(c *gin.Context)
+	// Get enabled music services and public SDK configuration
+	// (GET /api/music/config)
+	GetMusicConfig(c *gin.Context)
+	// Get or refresh the authenticated user's Spotify access token
+	// (GET /api/music/spotify/access-token)
+	GetSpotifyAccessToken(c *gin.Context)
 	// Create a new party
 	// (POST /api/parties)
 	CreateParty(c *gin.Context)
 	// Get party metadata by short code
 	// (GET /api/parties/{partyId})
 	GetParty(c *gin.Context, partyId string)
+	// Get provider metadata for a single track
+	// (GET /api/parties/{partyId}/music/metadata)
+	GetMusicMetadata(c *gin.Context, partyId string, params GetMusicMetadataParams)
+	// Search a music catalog using the host's provider connection
+	// (GET /api/parties/{partyId}/music/search)
+	SearchMusic(c *gin.Context, partyId string, params SearchMusicParams)
+	// Read live playback state (null when the player lease expires)
+	// (GET /api/parties/{partyId}/playback)
+	GetPartyPlayback(c *gin.Context, partyId string)
+	// Claim, report, skip, remove, or release playback (host only)
+	// (POST /api/parties/{partyId}/playback)
+	ControlPartyPlayback(c *gin.Context, partyId string)
 	// List the ordered queue for a party
 	// (GET /api/parties/{partyId}/tracks)
 	ListQueueTracks(c *gin.Context, partyId string)
@@ -253,6 +396,32 @@ func (siw *ServerInterfaceWrapper) GetMe(c *gin.Context) {
 	siw.Handler.GetMe(c)
 }
 
+// GetMusicConfig operation middleware
+func (siw *ServerInterfaceWrapper) GetMusicConfig(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetMusicConfig(c)
+}
+
+// GetSpotifyAccessToken operation middleware
+func (siw *ServerInterfaceWrapper) GetSpotifyAccessToken(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetSpotifyAccessToken(c)
+}
+
 // CreateParty operation middleware
 func (siw *ServerInterfaceWrapper) CreateParty(c *gin.Context) {
 
@@ -293,6 +462,144 @@ func (siw *ServerInterfaceWrapper) GetParty(c *gin.Context) {
 	}
 
 	siw.Handler.GetParty(c, partyId)
+}
+
+// GetMusicMetadata operation middleware
+func (siw *ServerInterfaceWrapper) GetMusicMetadata(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "partyId" -------------
+	var partyId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "partyId", c.Param("partyId"), &partyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter partyId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetMusicMetadataParams
+
+	// ------------- Required query parameter "provider" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "provider", c.Request.URL.Query(), &params.Provider, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter provider: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Required query parameter "id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "id", c.Request.URL.Query(), &params.Id, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetMusicMetadata(c, partyId, params)
+}
+
+// SearchMusic operation middleware
+func (siw *ServerInterfaceWrapper) SearchMusic(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "partyId" -------------
+	var partyId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "partyId", c.Param("partyId"), &partyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter partyId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SearchMusicParams
+
+	// ------------- Required query parameter "provider" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "provider", c.Request.URL.Query(), &params.Provider, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter provider: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Required query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "q", c.Request.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter q: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.SearchMusic(c, partyId, params)
+}
+
+// GetPartyPlayback operation middleware
+func (siw *ServerInterfaceWrapper) GetPartyPlayback(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "partyId" -------------
+	var partyId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "partyId", c.Param("partyId"), &partyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter partyId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetPartyPlayback(c, partyId)
+}
+
+// ControlPartyPlayback operation middleware
+func (siw *ServerInterfaceWrapper) ControlPartyPlayback(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "partyId" -------------
+	var partyId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "partyId", c.Param("partyId"), &partyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter partyId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ControlPartyPlayback(c, partyId)
 }
 
 // ListQueueTracks operation middleware
@@ -483,8 +790,14 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	}
 
 	router.GET(options.BaseURL+"/api/me", wrapper.GetMe)
+	router.GET(options.BaseURL+"/api/music/config", wrapper.GetMusicConfig)
+	router.GET(options.BaseURL+"/api/music/spotify/access-token", wrapper.GetSpotifyAccessToken)
 	router.POST(options.BaseURL+"/api/parties", wrapper.CreateParty)
 	router.GET(options.BaseURL+"/api/parties/:partyId", wrapper.GetParty)
+	router.GET(options.BaseURL+"/api/parties/:partyId/music/metadata", wrapper.GetMusicMetadata)
+	router.GET(options.BaseURL+"/api/parties/:partyId/music/search", wrapper.SearchMusic)
+	router.GET(options.BaseURL+"/api/parties/:partyId/playback", wrapper.GetPartyPlayback)
+	router.POST(options.BaseURL+"/api/parties/:partyId/playback", wrapper.ControlPartyPlayback)
 	router.GET(options.BaseURL+"/api/parties/:partyId/tracks", wrapper.ListQueueTracks)
 	router.DELETE(options.BaseURL+"/api/parties/:partyId/tracks/:provider/:trackId/vote", wrapper.RetractVote)
 	router.PUT(options.BaseURL+"/api/parties/:partyId/tracks/:provider/:trackId/vote", wrapper.CastVote)
@@ -526,6 +839,59 @@ func (response GetMe401JSONResponse) VisitGetMeResponse(w http.ResponseWriter) e
 	w.WriteHeader(401)
 	_, err := buf.WriteTo(w)
 	return err
+}
+
+type GetMusicConfigRequestObject struct {
+}
+
+type GetMusicConfigResponseObject interface {
+	VisitGetMusicConfigResponse(w http.ResponseWriter) error
+}
+
+type GetMusicConfig200JSONResponse MusicConfig
+
+func (response GetMusicConfig200JSONResponse) VisitGetMusicConfigResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSpotifyAccessTokenRequestObject struct {
+}
+
+type GetSpotifyAccessTokenResponseObject interface {
+	VisitGetSpotifyAccessTokenResponse(w http.ResponseWriter) error
+}
+
+type GetSpotifyAccessToken200JSONResponse struct {
+	AccessToken string `json:"accessToken"`
+	ExpiresIn   int    `json:"expiresIn"`
+}
+
+func (response GetSpotifyAccessToken200JSONResponse) VisitGetSpotifyAccessTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSpotifyAccessToken409Response struct {
+}
+
+func (response GetSpotifyAccessToken409Response) VisitGetSpotifyAccessTokenResponse(w http.ResponseWriter) error {
+	w.WriteHeader(409)
+	return nil
 }
 
 type CreatePartyRequestObject struct {
@@ -640,6 +1006,137 @@ func (response GetParty500JSONResponse) VisitGetPartyResponse(w http.ResponseWri
 	w.WriteHeader(500)
 	_, err := buf.WriteTo(w)
 	return err
+}
+
+type GetMusicMetadataRequestObject struct {
+	PartyId string `json:"partyId"`
+	Params  GetMusicMetadataParams
+}
+
+type GetMusicMetadataResponseObject interface {
+	VisitGetMusicMetadataResponse(w http.ResponseWriter) error
+}
+
+type GetMusicMetadata200JSONResponse MusicMetadata
+
+func (response GetMusicMetadata200JSONResponse) VisitGetMusicMetadataResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMusicMetadata503Response struct {
+}
+
+func (response GetMusicMetadata503Response) VisitGetMusicMetadataResponse(w http.ResponseWriter) error {
+	w.WriteHeader(503)
+	return nil
+}
+
+type SearchMusicRequestObject struct {
+	PartyId string `json:"partyId"`
+	Params  SearchMusicParams
+}
+
+type SearchMusicResponseObject interface {
+	VisitSearchMusicResponse(w http.ResponseWriter) error
+}
+
+type SearchMusic200JSONResponse []MusicSearchResult
+
+func (response SearchMusic200JSONResponse) VisitSearchMusicResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SearchMusic409Response struct {
+}
+
+func (response SearchMusic409Response) VisitSearchMusicResponse(w http.ResponseWriter) error {
+	w.WriteHeader(409)
+	return nil
+}
+
+type SearchMusic503Response struct {
+}
+
+func (response SearchMusic503Response) VisitSearchMusicResponse(w http.ResponseWriter) error {
+	w.WriteHeader(503)
+	return nil
+}
+
+type GetPartyPlaybackRequestObject struct {
+	PartyId string `json:"partyId"`
+}
+
+type GetPartyPlaybackResponseObject interface {
+	VisitGetPartyPlaybackResponse(w http.ResponseWriter) error
+}
+
+type GetPartyPlayback200JSONResponse NullablePlaybackState
+
+func (response GetPartyPlayback200JSONResponse) VisitGetPartyPlaybackResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ControlPartyPlaybackRequestObject struct {
+	PartyId string `json:"partyId"`
+	Body    *ControlPartyPlaybackJSONRequestBody
+}
+
+type ControlPartyPlaybackResponseObject interface {
+	VisitControlPartyPlaybackResponse(w http.ResponseWriter) error
+}
+
+type ControlPartyPlayback200JSONResponse NullablePlaybackState
+
+func (response ControlPartyPlayback200JSONResponse) VisitControlPartyPlaybackResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ControlPartyPlayback403Response struct {
+}
+
+func (response ControlPartyPlayback403Response) VisitControlPartyPlaybackResponse(w http.ResponseWriter) error {
+	w.WriteHeader(403)
+	return nil
+}
+
+type ControlPartyPlayback409Response struct {
+}
+
+func (response ControlPartyPlayback409Response) VisitControlPartyPlaybackResponse(w http.ResponseWriter) error {
+	w.WriteHeader(409)
+	return nil
 }
 
 type ListQueueTracksRequestObject struct {
@@ -1013,12 +1510,30 @@ type StrictServerInterface interface {
 	// Return the authenticated user's identity claims
 	// (GET /api/me)
 	GetMe(ctx context.Context, request GetMeRequestObject) (GetMeResponseObject, error)
+	// Get enabled music services and public SDK configuration
+	// (GET /api/music/config)
+	GetMusicConfig(ctx context.Context, request GetMusicConfigRequestObject) (GetMusicConfigResponseObject, error)
+	// Get or refresh the authenticated user's Spotify access token
+	// (GET /api/music/spotify/access-token)
+	GetSpotifyAccessToken(ctx context.Context, request GetSpotifyAccessTokenRequestObject) (GetSpotifyAccessTokenResponseObject, error)
 	// Create a new party
 	// (POST /api/parties)
 	CreateParty(ctx context.Context, request CreatePartyRequestObject) (CreatePartyResponseObject, error)
 	// Get party metadata by short code
 	// (GET /api/parties/{partyId})
 	GetParty(ctx context.Context, request GetPartyRequestObject) (GetPartyResponseObject, error)
+	// Get provider metadata for a single track
+	// (GET /api/parties/{partyId}/music/metadata)
+	GetMusicMetadata(ctx context.Context, request GetMusicMetadataRequestObject) (GetMusicMetadataResponseObject, error)
+	// Search a music catalog using the host's provider connection
+	// (GET /api/parties/{partyId}/music/search)
+	SearchMusic(ctx context.Context, request SearchMusicRequestObject) (SearchMusicResponseObject, error)
+	// Read live playback state (null when the player lease expires)
+	// (GET /api/parties/{partyId}/playback)
+	GetPartyPlayback(ctx context.Context, request GetPartyPlaybackRequestObject) (GetPartyPlaybackResponseObject, error)
+	// Claim, report, skip, remove, or release playback (host only)
+	// (POST /api/parties/{partyId}/playback)
+	ControlPartyPlayback(ctx context.Context, request ControlPartyPlaybackRequestObject) (ControlPartyPlaybackResponseObject, error)
 	// List the ordered queue for a party
 	// (GET /api/parties/{partyId}/tracks)
 	ListQueueTracks(ctx context.Context, request ListQueueTracksRequestObject) (ListQueueTracksResponseObject, error)
@@ -1120,6 +1635,54 @@ func (sh *strictHandler) GetMe(ctx *gin.Context) {
 	}
 }
 
+// GetMusicConfig operation middleware
+func (sh *strictHandler) GetMusicConfig(ctx *gin.Context) {
+	var request GetMusicConfigRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMusicConfig(ctx, request.(GetMusicConfigRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMusicConfig")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetMusicConfigResponseObject); ok {
+		if err := validResponse.VisitGetMusicConfigResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSpotifyAccessToken operation middleware
+func (sh *strictHandler) GetSpotifyAccessToken(ctx *gin.Context) {
+	var request GetSpotifyAccessTokenRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSpotifyAccessToken(ctx, request.(GetSpotifyAccessTokenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSpotifyAccessToken")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetSpotifyAccessTokenResponseObject); ok {
+		if err := validResponse.VisitGetSpotifyAccessTokenResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // CreateParty operation middleware
 func (sh *strictHandler) CreateParty(ctx *gin.Context) {
 	var request CreatePartyRequestObject
@@ -1170,6 +1733,119 @@ func (sh *strictHandler) GetParty(ctx *gin.Context, partyId string) {
 		sh.options.HandlerErrorFunc(ctx, err)
 	} else if validResponse, ok := response.(GetPartyResponseObject); ok {
 		if err := validResponse.VisitGetPartyResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMusicMetadata operation middleware
+func (sh *strictHandler) GetMusicMetadata(ctx *gin.Context, partyId string, params GetMusicMetadataParams) {
+	var request GetMusicMetadataRequestObject
+
+	request.PartyId = partyId
+	request.Params = params
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMusicMetadata(ctx, request.(GetMusicMetadataRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMusicMetadata")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetMusicMetadataResponseObject); ok {
+		if err := validResponse.VisitGetMusicMetadataResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SearchMusic operation middleware
+func (sh *strictHandler) SearchMusic(ctx *gin.Context, partyId string, params SearchMusicParams) {
+	var request SearchMusicRequestObject
+
+	request.PartyId = partyId
+	request.Params = params
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.SearchMusic(ctx, request.(SearchMusicRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SearchMusic")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(SearchMusicResponseObject); ok {
+		if err := validResponse.VisitSearchMusicResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetPartyPlayback operation middleware
+func (sh *strictHandler) GetPartyPlayback(ctx *gin.Context, partyId string) {
+	var request GetPartyPlaybackRequestObject
+
+	request.PartyId = partyId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPartyPlayback(ctx, request.(GetPartyPlaybackRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPartyPlayback")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetPartyPlaybackResponseObject); ok {
+		if err := validResponse.VisitGetPartyPlaybackResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ControlPartyPlayback operation middleware
+func (sh *strictHandler) ControlPartyPlayback(ctx *gin.Context, partyId string) {
+	var request ControlPartyPlaybackRequestObject
+
+	request.PartyId = partyId
+
+	var body ControlPartyPlaybackJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ControlPartyPlayback(ctx, request.(ControlPartyPlaybackRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ControlPartyPlayback")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ControlPartyPlaybackResponseObject); ok {
+		if err := validResponse.VisitControlPartyPlaybackResponse(ctx.Writer); err != nil {
 			sh.options.ResponseErrorHandlerFunc(ctx, err)
 		}
 	} else if response != nil {
@@ -1343,56 +2019,73 @@ func (sh *strictHandler) GetHealth(ctx *gin.Context) {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

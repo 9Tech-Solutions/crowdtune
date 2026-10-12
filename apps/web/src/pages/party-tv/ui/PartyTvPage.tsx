@@ -7,8 +7,8 @@ import type { Track, Metadata } from '@/entities/track'
 import { trackIdentityKey, formatArtists, pickCoverUrl } from '@/entities/track'
 import type { Playback } from '@/entities/party'
 import { PlaybackProgressBar } from '@/widgets/playback-progress-bar'
-import { usePartyQuery } from '@/pages/party/api/use-party-query'
-import { usePlaybackQuery } from '@/pages/party/api/use-playback-query'
+import { usePartyQuery, usePlaybackQuery } from '@/entities/party'
+import { useTrackMetadata } from '@/entities/track'
 import { useTvQueueQuery } from '../api/use-tv-queue-query'
 
 // ---------------------------------------------------------------------------
@@ -249,7 +249,8 @@ export function PartyTvPage() {
   // Server state
   const { data: party, isLoading: partyLoading, error: partyError } = usePartyQuery(partyId)
   const { data: playback } = usePlaybackQuery(partyId)
-  const { tracks, metadataByKey, isLoading: queueLoading } = useTvQueueQuery(partyId)
+  const { tracks, metadataByKey: queueMetadata, isLoading: queueLoading } = useTvQueueQuery(partyId)
+  const metadataByKey = { ...queueMetadata, ...useTrackMetadata(partyId, tracks) }
 
   // Cursor auto-hide state (spec section 4.5)
   const [cursorVisible, setCursorVisible] = useState(false)
