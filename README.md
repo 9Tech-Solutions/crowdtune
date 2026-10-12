@@ -110,6 +110,12 @@ and validation commands. See the [security policy](.github/SECURITY.md) for repo
 
 ## License
 
-[Sustainable Use License v1.0](./LICENSE.md). This project is source-available, with restrictions on use
-and redistribution. See the license for its full terms, including branch-specific restrictions.
-Hosting CrowdTune as a paid service requires a separate commercial agreement with 9Tech Solutions.
+[PolyForm Shield License 1.0.0](./LICENSE.md), offered by 9Tech Solutions Co., Ltd. CrowdTune is
+source-available. Use, modification, and redistribution are permitted subject to the license, including
+its restriction on providing products that compete with CrowdTune or products the licensor or its
+affiliates provide using this software. See the license for the full terms and exceptions.
+
+Required Notice: Copyright 9Tech Solutions Co., Ltd.
+
+Third-party components retain their original licenses. CrowdTune is a trademark of 9Tech Solutions
+Co., Ltd.; this license does not grant trademark rights.

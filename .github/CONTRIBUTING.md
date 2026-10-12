@@ -1,7 +1,7 @@
 # Contributing to CrowdTune
 
 CrowdTune is in development. Read [LICENSE.md](../LICENSE.md) before using, modifying, or distributing
-the source; this repository uses the Sustainable Use License, including branch-specific restrictions.
+the source; this repository uses the PolyForm Shield License 1.0.0.
 
 Discuss larger changes in a GitHub issue first. Keep pull requests focused and describe the problem,
 the resulting behavior, and the checks you ran. Use Conventional Commit messages.
